@@ -1,6 +1,7 @@
-{% if short %}
-    <div class="sd-post-story-container">
-        <div class="sd-post-story">
+{% if post.is_text %}
+<div class="sd-post-story-container">
+    <div class="sd-post-story">
+        {% if short %}
             {# Add a read more link to longer posts #}
             {{ post.content_html | safe | truncatechars_html:250 }}
 
@@ -9,22 +10,21 @@
                     <a target="_blank" href="{% url 'app:posts:detail' post.id %}">Read More</a>
                 </div>
             {% endif %}
-        </div>
+        {% else %}
+            {{ post.content_html | safe }}
+        {% endif %}
     </div>
-{% else %}
-    <div class="sd-post-story-container">
-        <div class="sd-post-story">
-            <div>
-                {{ post.content_html | safe }}
-            </div>
-        </div>
-    </div>
-{% endif %}
-
-{% if post.image %}
+</div>
+{% elif post.is_image %}
     <div class="sd-post-media-container sd-margin-top-20">
         <img class="img-responsive img-rounded"
-             src="{{ post.image.url }}"
+             src="{{ post.upload_url }}"
              alt="Post picture">
+    </div>
+{% elif post.is_file %}
+    <div class="sd-post-media-container sd-margin-top-20">
+        <a href="{{ post.upload_url }}" target="_blank">
+            Right-click > Save this link to download the file.
+        </a>
     </div>
 {% endif %}
