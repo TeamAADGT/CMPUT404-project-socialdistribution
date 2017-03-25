@@ -29,6 +29,10 @@ posts_urlpatterns = [
     # view all comments on a posts
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/comments
     url(r'(?P<pk>[0-9a-z\\-]+)/comments/$', post_views.view_post_comments, name='view-posts-comments'),
+
+    # get post's image
+    # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/image
+    url(r'(?P<pk>[0-9a-z\\-]+)/image/$', post_views.image, name='image'),
 ]
 
 authors_urlpatterns = [

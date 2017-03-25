@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import generic
@@ -127,6 +127,19 @@ class PostDelete(DeleteView):
             return redirect_to_login(request.get_full_path())
         return super(PostDelete, self).dispatch(
             request, *args, **kwargs)
+
+
+def image(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+
+    if not post.is_image():
+        # doesn't make sense to do this
+        return HttpResponseForbidden()
+
+    return HttpResponse(
+        content=post.content,
+        content_type=post.content_type,
+    )
 
 
 def view_post_comments(request, pk):
