@@ -3,10 +3,12 @@ from rest_framework.response import Response
 
 
 class PostsPagination(pagination.PageNumberPagination):
-    page_size_query_param = "size"
     """
     Source: http://www.django-rest-framework.org/api-guide/pagination/
     """
+
+    page_size_query_param = "size"
+
     def get_paginated_response(self, data):
         return Response({
             "query": "posts",
