@@ -48,7 +48,7 @@ urlpatterns = [
     url(r'^login/$', auth_views.login, name='login'),
     url(r'^logout/$', auth_views.logout, name='logout'),
     url(r'^debug/', include(debug_urls.urlpatterns, namespace='debug')),
-    url(r'^service/docs/', include_docs_urls(title='My API title')),
+    url(r'^service/docs/', include_docs_urls(title='API Documentation')),
 ]
 
 admin.site.site_header = 'Social Distribution Administration'
