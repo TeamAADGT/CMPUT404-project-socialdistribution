@@ -21,4 +21,10 @@
              src="{{ post.upload_url }}"
              alt="Post picture">
     </div>
+{% elif post.is_file %}
+    <div class="sd-post-media-container sd-margin-top-20">
+        <a href="{{ post.upload_url }}" target="_blank">
+            Right-click > Save this link to download the file.
+        </a>
+    </div>
 {% endif %}
