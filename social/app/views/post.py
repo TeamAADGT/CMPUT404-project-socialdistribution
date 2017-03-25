@@ -1,3 +1,4 @@
+import base64
 import uuid
 
 from django.contrib import messages
@@ -11,7 +12,7 @@ from django.views import generic
 from django.views.generic import UpdateView, DeleteView
 
 from social.app.forms.comment import CommentForm
-from social.app.forms.post import TextPostForm
+from social.app.forms.post import TextPostForm, FilePostForm
 from social.app.models.author import Author
 from social.app.models.category import Category
 from social.app.models.comment import Comment
@@ -136,9 +137,17 @@ def get_upload_file(request, pk):
         # doesn't make sense to do this
         return HttpResponseForbidden()
 
+    if post.is_image():
+        content = base64.b64decode(post.content)
+        content_type = post.content_type.split(';')[0]
+    else:
+        # is application/base64, so don't decode
+        content = post.content
+        content_type = post.content_type
+
     return HttpResponse(
-        content=post.content,
-        content_type=post.content_type,
+        content=content,
+        content_type=content_type,
     )
 
 
@@ -168,6 +177,56 @@ def post_create(request):
 
         instance.source = url
         instance.origin = url
+
+        # Upload posts are always unlisted
+        instance.unlisted = True
+
+        instance.save()
+
+        categories_string = form.cleaned_data["categories"]
+        if categories_string:
+            for name in categories_string.split(" "):
+                if not instance.categories.filter(name=name).exists():
+                    category = Category.objects.filter(name=name).first()
+
+                    if category is None:
+                        category = Category.objects.create(name=name)
+
+                    instance.categories.add(category)
+
+            instance.save()
+
+        messages.success(request, "You just added a new post.")
+        return HttpResponseRedirect(url)
+    context = {
+        "form": form,
+    }
+    return render(request, "posts/post_form.html", context)
+
+
+@login_required
+def post_upload(request):
+    if not request.user.is_authenticated():
+        raise Http404
+
+    form = FilePostForm(request.POST or None, request.FILES or None)
+    if form.is_valid():
+        instance = form.save(commit=False)
+
+        current_author = request.user.profile
+        new_id = uuid.uuid4()
+
+        instance.id = new_id
+        instance.author = current_author
+
+        url = instance.get_absolute_url()
+
+        instance.source = url
+        instance.origin = url
+
+        file_content = request.FILES['content']
+        instance.content = base64.b64encode(file_content.read())
+
         instance.save()
 
         categories_string = form.cleaned_data["categories"]

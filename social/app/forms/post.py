@@ -15,3 +15,17 @@ class TextPostForm(forms.ModelForm):
         model = Post
         fields = ["title", "description", "content_type", "content", "visibility", "visible_to",
                   "unlisted"]
+
+
+class FilePostForm(forms.ModelForm):
+    content_type = forms.ChoiceField(choices=Post.UPLOAD_CONTENT_TYPES)
+    categories = forms.CharField(
+        label="Categories",
+        required=False,
+        help_text="Space-delimited",
+    )
+    content = forms.FileField()
+
+    class Meta:
+        model = Post
+        fields = ["title", "description", "content_type", "content", "visibility", "visible_to"]

@@ -13,6 +13,9 @@ posts_urlpatterns = [
     # /posts/add/
     url(r'^add/$', post_views.post_create, name='posts-add'),
 
+    # /posts/upload/
+    url(r'^upload/$', post_views.post_upload, name='upload-new'),
+
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/
     url(r'^(?P<pk>[0-9a-z\\-]+)/$', post_views.DetailView.as_view(), name='detail'),
 
@@ -32,7 +35,7 @@ posts_urlpatterns = [
 
     # get post's image
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/image
-    url(r'(?P<pk>[0-9a-z\\-]+)/file/$', post_views.get_upload_file, name='upload'),
+    url(r'(?P<pk>[0-9a-z\\-]+)/upload/$', post_views.get_upload_file, name='upload-view'),
 ]
 
 authors_urlpatterns = [
