@@ -107,6 +107,12 @@ class Post(models.Model):
     def is_image(self):
         return self.content_type in Post.IMAGE_CONTENT_TYPES
 
-    def image_url(self):
-        return reverse('app:posts:image', kwargs={'pk': self.id})
+    def is_file(self):
+        return self.content_type in Post.FILE_CONTENT_TYPES
+
+    def is_upload(self):
+        return self.is_file() or self.is_image()
+
+    def upload_url(self):
+        return reverse('app:posts:upload', kwargs={'pk': self.id})
 

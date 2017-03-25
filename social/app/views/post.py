@@ -129,10 +129,10 @@ class PostDelete(DeleteView):
             request, *args, **kwargs)
 
 
-def image(request, pk):
+def get_upload_file(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    if not post.is_image():
+    if not post.is_upload():
         # doesn't make sense to do this
         return HttpResponseForbidden()
 
