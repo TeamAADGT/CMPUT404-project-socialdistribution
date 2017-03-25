@@ -184,9 +184,6 @@ def post_create(request):
         instance.source = url
         instance.origin = url
 
-        # Upload posts are always unlisted
-        instance.unlisted = True
-
         instance.save()
 
         categories_string = form.cleaned_data["categories"]
@@ -232,6 +229,9 @@ def post_upload(request):
 
         file_content = request.FILES['content']
         instance.content = base64.b64encode(file_content.read())
+
+        # Upload posts are always unlisted
+        instance.unlisted = True
 
         instance.save()
 
