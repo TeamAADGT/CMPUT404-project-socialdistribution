@@ -10,6 +10,26 @@ from social.app.models.author import Author
 @api_view(["POST"])
 @permission_classes((IsAuthenticated,))
 def friendrequest(request):
+    """
+    Example
+    <pre>
+    {
+        "query":"friendrequest",
+        "author": {
+            "id":"http://127.0.0.1:8000/author/4025b419-5a3c-4538-9220-d55a2c0cad7e",
+            "host":"http://127.0.0.1:8000/",
+            "displayName":"Nice Raccoon",
+            "url":"http://127.0.0.1:8000/author/4025b419-5a3c-4538-9220-d55a2c0cad7e",
+        },
+        "friend": {
+            "id":"http://127.0.0.1:8000/author/bd81ae42-98b5-46f6-b87f-b60cf3a39734",
+            "host":"http://127.0.0.1:8000/",
+            "displayName":"Exceptional Meow",
+            "url":"http://127.0.0.1:8000/author/4025b419-5a3c-4538-9220-d55a2c0cad7e",
+        }
+    }
+    </pre>
+    """
     serializer = FriendRequestSerializer(data=request.data)
 
     if serializer.is_valid():

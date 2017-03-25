@@ -3,9 +3,6 @@ import re
 
 
 class FriendRequest(object):
-    """
-    Test, will this show up in docs.
-    """
     def __init__(self, query, author, friend):
         self.query = query
         self.author = author
