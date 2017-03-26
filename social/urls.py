@@ -26,7 +26,9 @@ from social.app.views import author as author_views
 from service import urls as rest_api_urls
 from social.app.forms.user_profile import UserProfileForm
 from . import settings
-from rest_framework.documentation import include_docs_urls
+from rest_framework_swagger.views import get_swagger_view
+
+schema_view = get_swagger_view(title='Pastebin API')
 
 urlpatterns = [
     url(r'^service/', include(rest_api_urls.urlpatterns, namespace='service')),
@@ -48,7 +50,7 @@ urlpatterns = [
     url(r'^login/$', auth_views.login, name='login'),
     url(r'^logout/$', auth_views.logout, name='logout'),
     url(r'^debug/', include(debug_urls.urlpatterns, namespace='debug')),
-    url(r'^service/docs/', include_docs_urls(title='API Documentation')),
+    url(r'^service/docs/$', schema_view)
 ]
 
 admin.site.site_header = 'Social Distribution Administration'
