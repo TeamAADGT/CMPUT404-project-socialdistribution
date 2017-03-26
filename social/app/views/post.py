@@ -47,28 +47,28 @@ def indexHome(request):
 
 
 
-        # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 3: posts.visibility=foaf and friend/foaf                --> can view
 
+        # case 3: posts.visibility=foaf and friend/foaf                --> can view
+        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         friends = author.friends.all()
         foafs = list()
-        print(friends)
+        #print(friends)
 
         for friend in friends:
             new_foafs = friend.friends.all()
             foafs.append(new_foafs)
 
-        print(foafs)
-
-
+        #print(foafs)
 
         context3['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(Q(author__id__in=foafs)) \
             .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
+
+        # TODO: need to be able to filter posts by current user's relationship to posts author
         # case 4: posts.visibility=private                             --> can't see
 
+        # Set context
         context["user_posts"] = context1["user_posts"] | context2["user_posts"] | context3["user_posts"]
 
         return render(request, 'app/index.html', context)
@@ -91,7 +91,7 @@ def view_posts(request):
         # NOTE: this does the same thing as the function indexHome in app/view.py
         # Return posts that are NOT by current user (=author) and:
 
-        # case 1: posts.visibility=public and following               --> can view
+        # case 1: posts.visibility=public and following                --> can view
         # case 1': posts.visibility=public  and not following          --> can't view
         # case 2': posts.visibility=friends and not friends            --> can't view
         context1['user_posts'] = Post.objects \
@@ -106,40 +106,35 @@ def view_posts(request):
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
-        #context["user_posts"] = context1["user_posts"] | context2["user_posts"]
-
-        # TODO: need to be able to filter posts by current user's relationship to posts author
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
-
-        # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 3: posts.visibility=foaf and friend/foaf                --> can view
-
+        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         context3 = dict()
-        friends =set(f.id for f in author.friends.all())
+        friends = set(f.id for f in author.friends.all())
         print ("friends", friends)
         foafs = set()
 
+        # Get all the foafs
         for friend in friends:
             friend_obj = Author.objects.get(pk=friend)
-            print "friend obj", friend_obj
+            #print ("friend obj", friend_obj)
             new_foafs = set(ff.id for ff in friend_obj.friends.all())
-            print "new foafs", new_foafs
+            #print ("new foafs", new_foafs)
             foafs.update(new_foafs)
 
         foafs.update(friends)
-        print("foafs", foafs)
+        #print("foafs", foafs)
 
         context3['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(Q(author__id__in=foafs)) \
             .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
+
+        # TODO: need to be able to filter posts by current user's relationship to posts author
         # case 4: posts.visibility=private                             --> can't see
 
+
+        # Set context
         context["user_posts"] = context1["user_posts"] | context2["user_posts"] | context3["user_posts"]
-
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        # case 4: posts.visibility=private                             --> can't see
 
         return render(request, 'app/index.html', context)
 
