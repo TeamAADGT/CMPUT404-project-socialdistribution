@@ -4,7 +4,7 @@ import uuid
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
-from django.db.models import Q
+from django.db.models import Q, F
 from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -27,6 +27,7 @@ def indexHome(request):
         context = dict()
         context1 = dict()
         context2 = dict()
+        context3 = dict()
 
         # Return posts that are NOT by current user (=author) and:
 
@@ -44,12 +45,19 @@ def indexHome(request):
             .filter(author__id__in=author.friends.all()) \
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC")).order_by('-published')
 
-        context["user_posts"] = context1["user_posts"] | context2["user_posts"]
+
 
         # TODO: need to be able to filter posts by current user's relationship to posts author
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
+
+        context3['user_posts'] = Post.objects \
+            .filter(~Q(author__id=user.profile.id)) \
+            .filter(Q(author__id__in=author.friends.friends.all())) \
+            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         # case 4: posts.visibility=private                             --> can't see
+
+        context["user_posts"] = context1["user_posts"] | context2["user_posts"] | context3["user_posts"]
 
         return render(request, 'app/index.html', context)
 

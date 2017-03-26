@@ -82,6 +82,15 @@ body {
     display: block;
 }
 
+.sd-post-description {
+    border-top: 1px solid #CCC;
+    border-bottom: 1px solid #CCC;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
 .post-image {
     height: 50%;
 }
