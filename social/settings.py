@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'rest_framework',
     'service.apps.ApiConfig',
+    'rest_framework_swagger',
 ]
 
 MIDDLEWARE_CLASSES = [
