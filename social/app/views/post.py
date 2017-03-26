@@ -260,13 +260,13 @@ def post_upload(request):
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
 def add_comment_to_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    user = Author.objects.get(user=request.user.id)
+    current_author = request.user.profile
     if request.method == "POST":
         form = CommentForm(request.POST)
 
         if form.is_valid():
             comment = form.save(commit=False)
-            comment.author = user
+            comment.author = current_author
             comment.post = post
             comment.save()
             return redirect('app:posts:detail', pk=post.pk)

@@ -94,12 +94,12 @@ class Post(models.Model):
 
         return ""
 
-    def categories_string(self):
-        names = [cat.name for cat in self.categories.all()]
-        if names:
-            return " ".join(names)
+    def categories_list(self):
+        return [cat.name for cat in self.categories.all()]
 
-        return ""
+    def categories_string(self):
+        names = self.categories_list()
+        return " ".join(names) if names else ""
 
     def is_text(self):
         return self.content_type in keys(Post.TEXT_CONTENT_TYPES)
