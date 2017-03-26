@@ -4,8 +4,6 @@ from social.app.views import post as post_views
 from social.app.views import author as author_views
 from social.app.views import friend as friend_views
 
-uuid_pattern = '[0-9,a-z,\\-]+'
-
 posts_urlpatterns = [
     # /posts/
     url(r'^$', post_views.view_posts, name='index'),
