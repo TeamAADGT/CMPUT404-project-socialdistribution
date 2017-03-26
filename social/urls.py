@@ -28,7 +28,7 @@ from social.app.forms.user_profile import UserProfileForm
 from . import settings
 from rest_framework_swagger.views import get_swagger_view
 
-schema_view = get_swagger_view(title='Pastebin API')
+schema_view = get_swagger_view(title='Social Distribution API')
 
 urlpatterns = [
     url(r'^service/', include(rest_api_urls.urlpatterns, namespace='service')),
