@@ -4,10 +4,12 @@ from rest_framework import routers
 import service.authors.views
 import service.friendrequest.views
 import service.users.views
+import service.nodes.views
 
 router = routers.DefaultRouter()
 router.register(r'users', service.users.views.UserViewSet)
-router.register(r'authors', service.authors.views.AuthorViewSet)
+router.register(r'nodes', service.nodes.views.NodeViewSet)
+router.register(r'author', service.authors.views.AuthorViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browseable API.

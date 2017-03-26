@@ -44,7 +44,7 @@ class Author(models.Model):
     friends = models.ManyToManyField('self', blank=True)
 
     def get_id_url(self):
-        return '%sauthors/%s/' % (self.node.service_url, str(self.id))
+        return '%sauthor/%s/' % (self.node.service_url, str(self.id))
 
     def follows(self, author):
         return self != author and len(self.followed_authors.filter(id=author.id)) > 0
