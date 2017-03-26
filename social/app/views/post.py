@@ -106,10 +106,38 @@ def view_posts(request):
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
-        context["user_posts"] = context1["user_posts"] | context2["user_posts"]
+        #context["user_posts"] = context1["user_posts"] | context2["user_posts"]
 
         # TODO: need to be able to filter posts by current user's relationship to posts author
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
+
+        # TODO: need to be able to filter posts by current user's relationship to posts author
+        # case 3: posts.visibility=foaf and friend/foaf                --> can view
+
+        context3 = dict()
+        friends =set(f.id for f in author.friends.all())
+        print ("friends", friends)
+        foafs = set()
+
+        for friend in friends:
+            friend_obj = Author.objects.get(pk=friend)
+            print "friend obj", friend_obj
+            new_foafs = set(ff.id for ff in friend_obj.friends.all())
+            print "new foafs", new_foafs
+            foafs.update(new_foafs)
+
+        foafs.update(friends)
+        print("foafs", foafs)
+
+        context3['user_posts'] = Post.objects \
+            .filter(~Q(author__id=user.profile.id)) \
+            .filter(Q(author__id__in=foafs)) \
+            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
+        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
+        # case 4: posts.visibility=private                             --> can't see
+
+        context["user_posts"] = context1["user_posts"] | context2["user_posts"] | context3["user_posts"]
+
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         # case 4: posts.visibility=private                             --> can't see
 
