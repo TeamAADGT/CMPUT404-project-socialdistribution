@@ -50,9 +50,21 @@ def indexHome(request):
         # TODO: need to be able to filter posts by current user's relationship to posts author
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
 
+        friends = author.friends.all()
+        foafs = list()
+        print(friends)
+
+        for friend in friends:
+            new_foafs = friend.friends.all()
+            foafs.append(new_foafs)
+
+        print(foafs)
+
+
+
         context3['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
-            .filter(Q(author__id__in=author.friends.all())) \
+            .filter(Q(author__id__in=foafs)) \
             .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         # case 4: posts.visibility=private                             --> can't see
