@@ -196,6 +196,31 @@ def post_upload(request):
     return render(request, "posts/post_form.html", context)
 
 
+@login_required
+def post_update(request, pk):
+    if not request.user.is_authenticated():
+        raise Http404
+
+    post = get_object_or_404(Post, pk=pk)
+
+    if post.author != request.user.profile:
+        return HttpResponse(status=401)
+
+    if post.is_upload():
+        form = FilePostForm(request.POST or None, request.FILES or None, instance=post)
+    else:
+        form = TextPostForm(request.POST or None, request.FILES or None, instance=post)
+
+    if form.is_valid():
+        instance = form.save(request=request)
+        messages.success(request, "You just updated your post.")
+        return HttpResponseRedirect(instance.get_absolute_url())
+    context = {
+        "form": form,
+    }
+    return render(request, "posts/post_form.html", context)
+
+
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
 def add_comment_to_post(request, pk):
