@@ -18,11 +18,15 @@ class Post(models.Model):
 
     FILE_CONTENT_TYPES = [
         ("application/base64", "File Upload"),
+    ]
+
+    IMAGE_CONTENT_TYPES = [
         ("image/png;base64", "Image (PNG)"),
         ("image/jpeg;base64", "Image (JPEG)"),
     ]
 
-    CONTENT_TYPES = TEXT_CONTENT_TYPES + FILE_CONTENT_TYPES
+    UPLOAD_CONTENT_TYPES = FILE_CONTENT_TYPES + IMAGE_CONTENT_TYPES
+    CONTENT_TYPES = TEXT_CONTENT_TYPES + UPLOAD_CONTENT_TYPES
 
     VISIBILITY_OPTIONS = [
         ("PUBLIC", "Public"),
@@ -90,10 +94,31 @@ class Post(models.Model):
 
         return ""
 
+    def categories_list(self):
+        return [cat.name for cat in self.categories.all()]
+
     def categories_string(self):
-        names = [cat.name for cat in self.categories.all()]
-        if names:
-            return " ".join(names)
+        names = self.categories_list()
+        return " ".join(names) if names else ""
 
-        return ""
+    def is_text(self):
+        return self.content_type in keys(Post.TEXT_CONTENT_TYPES)
 
+    def is_image(self):
+        return self.content_type in keys(Post.IMAGE_CONTENT_TYPES)
+
+    def is_file(self):
+        return self.content_type in keys(Post.FILE_CONTENT_TYPES)
+
+    def is_upload(self):
+        return self.is_file() or self.is_image()
+
+    def upload_url(self):
+        return reverse('app:posts:upload-view', kwargs={'pk': self.id})
+
+
+def keys(tuple_list):
+    """
+    Accepts a tuple list, returns a list of each tuple's first values
+    """
+    return [x[0] for x in tuple_list]
