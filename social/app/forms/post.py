@@ -22,20 +22,18 @@ class PostFormBase(forms.ModelForm):
 
     def save(self, commit=True, *args, **kwargs):
         request = kwargs["request"]
-        current_author = request.user.profile
-        new_id = uuid.uuid4()
 
         instance = super(PostFormBase, self).save(commit=False)
 
-        instance.id = new_id
-        instance.author = current_author
+        instance.author = request.user.profile
 
-        # Source:
-        # https://docs.djangoproject.com/en/1.10/ref/request-response/#django.http.HttpRequest.build_absolute_uri
-        url = request.build_absolute_uri(instance.get_absolute_url())
+        if not (instance.source and instance.origin):
+            # Source:
+            # https://docs.djangoproject.com/en/1.10/ref/request-response/#django.http.HttpRequest.build_absolute_uri
+            url = request.build_absolute_uri(instance.get_absolute_url())
 
-        instance.source = url
-        instance.origin = url
+            instance.source = url
+            instance.origin = url
 
         self.save_categories(instance, commit)
         self.save_hook(instance, request)
@@ -54,9 +52,7 @@ class PostFormBase(forms.ModelForm):
                     category = Category.objects.filter(name=name).first()
 
                     if category is None:
-                        category = Category(name=name)
-                        if commit:
-                            category.save()
+                        category = Category.objects.create(name=name)
 
                     instance.categories.add(category)
 
@@ -83,15 +79,32 @@ class TextPostForm(PostFormBase):
 
 class FilePostForm(PostFormBase):
     content_type = forms.ChoiceField(choices=Post.UPLOAD_CONTENT_TYPES)
-    content = forms.FileField()
+    content = forms.FileField(
+        required=False
+    )
 
     class Meta:
         model = Post
         fields = ["title", "description", "content_type", "content", "visibility", "visible_to"]
 
     def save_hook(self, instance, request):
-        file_content = request.FILES['content']
-        instance.content = base64.b64encode(file_content.read())
+        if 'content' in self.files:
+            file_content = self.files['content']
+            instance.content = base64.b64encode(file_content.read())
 
         # Upload posts are always unlisted
         instance.unlisted = True
+
+    def clean(self):
+        """
+        Conditional requirement logic from Benjamin Wohlwend (http://stackoverflow.com/users/45691/benjamin-wohlwend)
+        Link: http://stackoverflow.com/a/2307132 (CC-BY-SA 3.0)
+        """
+        cleaned_data = super(FilePostForm, self).clean()
+
+        is_insert = not Post.objects.filter(id=self.instance.id).exists()
+
+        if is_insert and 'content' not in self.files:
+            raise forms.ValidationError("A new upload post must have a file to upload.")
+        else:
+            return cleaned_data
