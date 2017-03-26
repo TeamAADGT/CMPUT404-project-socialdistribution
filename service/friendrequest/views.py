@@ -13,6 +13,7 @@ from social.app.models.author import Author
 @permission_classes((IsAuthenticated,))
 def friendrequest(request):
     """
+    Currently not implemented.
     Example </br>
     <pre>
     {
