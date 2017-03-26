@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 from service.authors.serializers import AuthorSerializer
 from social.app.models.author import Author
@@ -43,7 +44,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
         follower.followed_authors.add(followee)
 
         return Response(
-            {"followed_author": followee.get_id_url()},
+            {"followed_author": reverse("service:author-detail", kwargs={'pk': followee.id}, request=request)},
             status=status.HTTP_200_OK)
 
     @detail_route(methods=["POST"])
@@ -77,7 +78,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
         unfollower.followed_authors.remove(followee)
 
         return Response(
-            {"unfollowed_author": followee.get_id_url()},
+            {"unfollowed_author": reverse("service:author-detail", kwargs={'pk': followee.id}, request=request)},
             status=status.HTTP_200_OK)
 
     @detail_route(methods=["POST"])
@@ -115,5 +116,5 @@ class AuthorViewSet(viewsets.ModelViewSet):
         current_author.add_friend_request(target)
 
         return Response(
-            {"friend_requested_author": target.get_id_url()},
+            {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
             status=status.HTTP_200_OK)

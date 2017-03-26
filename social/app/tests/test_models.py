@@ -28,9 +28,6 @@ class AuthorTestCase(TestCase):
     def test_author_str(self):
         self.assertEquals(str(self.author), "McBob, Bob (Bobbert)")
 
-    def test_author_url(self):
-        self.assertEquals(str(self.author.get_id_url()), self.node.service_url + "authors/" + str(self.author.id) + "/")
-
     def test_author_does_not_follow(self):
         user = User.objects.create_user("test2", "test@test.com", "pass1")
         author = Author.objects.get(user__id=user.id)
