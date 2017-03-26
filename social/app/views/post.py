@@ -171,36 +171,9 @@ def post_create(request):
 
     form = TextPostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
-        instance = form.save(commit=False)
-
-        current_author = request.user.profile
-        new_id = uuid.uuid4()
-
-        instance.id = new_id
-        instance.author = current_author
-
-        url = instance.get_absolute_url()
-
-        instance.source = url
-        instance.origin = url
-
-        instance.save()
-
-        categories_string = form.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                if not instance.categories.filter(name=name).exists():
-                    category = Category.objects.filter(name=name).first()
-
-                    if category is None:
-                        category = Category.objects.create(name=name)
-
-                    instance.categories.add(category)
-
-            instance.save()
-
+        instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(url)
+        return HttpResponseRedirect(instance.get_absolute_url())
     context = {
         "form": form,
     }
@@ -214,42 +187,9 @@ def post_upload(request):
 
     form = FilePostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
-        instance = form.save(commit=False)
-
-        current_author = request.user.profile
-        new_id = uuid.uuid4()
-
-        instance.id = new_id
-        instance.author = current_author
-
-        url = instance.get_absolute_url()
-
-        instance.source = url
-        instance.origin = url
-
-        file_content = request.FILES['content']
-        instance.content = base64.b64encode(file_content.read())
-
-        # Upload posts are always unlisted
-        instance.unlisted = True
-
-        instance.save()
-
-        categories_string = form.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                if not instance.categories.filter(name=name).exists():
-                    category = Category.objects.filter(name=name).first()
-
-                    if category is None:
-                        category = Category.objects.create(name=name)
-
-                    instance.categories.add(category)
-
-            instance.save()
-
+        instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(url)
+        return HttpResponseRedirect(instance.get_absolute_url())
     context = {
         "form": form,
     }
