@@ -1,10 +1,12 @@
 from rest_framework import serializers
 from rest_framework import viewsets, status
-from rest_framework.decorators import detail_route
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.decorators import detail_route, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
+from service.authentication.node_basic import NodeBasicAuthentication
 from service.authors.serializers import AuthorSerializer, SimpleAuthorSerializer, AuthorURLSerializer
 from social.app.models.author import Author
 
@@ -15,6 +17,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     @detail_route(methods=["GET"])
+    @authentication_classes((NodeBasicAuthentication,))
     def friends(self, request, pk=None):
         try:
             friends = self.get_object().friends.all()
@@ -29,6 +32,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK)
 
     @detail_route(methods=["POST"])
+    @authentication_classes((SessionAuthentication,))
     def follow(self, request, pk=None):
 
         follower = request.user.profile
@@ -63,6 +67,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK)
 
     @detail_route(methods=["POST"])
+    @authentication_classes((SessionAuthentication,))
     def unfollow(self, request, pk=None):
 
         unfollower = request.user.profile
@@ -97,6 +102,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK)
 
     @detail_route(methods=["POST"])
+    @authentication_classes((SessionAuthentication,))
     def friendrequest(self, request, pk=None):
 
         current_author = request.user.profile

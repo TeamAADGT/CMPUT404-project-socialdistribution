@@ -153,10 +153,6 @@ REGISTRATION_OPEN = True
 AUTH_PROFILE_MODULE = "app.UserProfile"
 
 REST_FRAMEWORK = {
-    # TODO: Expose specific endpoints to authenticated server nodes via basic auth
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100
 }
