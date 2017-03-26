@@ -52,7 +52,7 @@ def indexHome(request):
 
         context3['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
-            .filter(Q(author__id__in=author.friends.friends.all())) \
+            .filter(Q(author__id__in=author.friends.all())) \
             .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         # case 4: posts.visibility=private                             --> can't see
