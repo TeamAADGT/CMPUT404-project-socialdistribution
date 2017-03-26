@@ -8,6 +8,7 @@ import service.posts.views
 
 router = routers.DefaultRouter()
 router.register(r'users', service.users.views.UserViewSet)
+router.register(r'nodes', service.nodes.views.NodeViewSet)
 router.register(r'author', service.authors.views.AuthorViewSet, base_name="author")
 router.register(r'posts', service.posts.views.PublicPostsViewSet, base_name="post")
 
