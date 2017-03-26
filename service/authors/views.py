@@ -1,10 +1,11 @@
+from rest_framework import serializers
 from rest_framework import viewsets, status
 from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from service.authors.serializers import AuthorSerializer
+from service.authors.serializers import AuthorSerializer, SimpleAuthorSerializer, AuthorURLSerializer
 from social.app.models.author import Author
 
 
@@ -12,6 +13,20 @@ class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     permission_classes = (IsAuthenticated,)
+
+    @detail_route(methods=["GET"])
+    def friends(self, request, pk=None):
+        try:
+            friends = self.get_object().friends.all()
+        except Author.DoesNotExist:
+            return Response(
+                {'detail': 'The author you wanted to follow could not be found.'},
+                status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"query": "friends",
+             "authors": AuthorURLSerializer(friends, context={'request': request}, many=True).data},
+            status=status.HTTP_200_OK)
 
     @detail_route(methods=["POST"])
     def follow(self, request, pk=None):
