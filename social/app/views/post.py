@@ -110,21 +110,6 @@ class DetailView(generic.DetailView):
     template_name = 'posts/detail.html'
 
 
-class PostUpdate(UpdateView):
-    """
-    Post update
-    """
-    model = Post
-    fields = ['post_story', 'use_markdown', 'image']
-    template_name = 'posts/post_form_update.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not author_passes_test(self.get_object(), request):
-            return redirect_to_login(request.get_full_path())
-        return super(PostUpdate, self).dispatch(
-            request, *args, **kwargs)
-
-
 class PostDelete(DeleteView):
     model = Post
     success_url = reverse_lazy('app:posts:index')
@@ -171,36 +156,9 @@ def post_create(request):
 
     form = TextPostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
-        instance = form.save(commit=False)
-
-        current_author = request.user.profile
-        new_id = uuid.uuid4()
-
-        instance.id = new_id
-        instance.author = current_author
-
-        url = instance.get_absolute_url()
-
-        instance.source = url
-        instance.origin = url
-
-        instance.save()
-
-        categories_string = form.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                if not instance.categories.filter(name=name).exists():
-                    category = Category.objects.filter(name=name).first()
-
-                    if category is None:
-                        category = Category.objects.create(name=name)
-
-                    instance.categories.add(category)
-
-            instance.save()
-
+        instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(url)
+        return HttpResponseRedirect(instance.get_absolute_url())
     context = {
         "form": form,
     }
@@ -214,42 +172,34 @@ def post_upload(request):
 
     form = FilePostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
-        instance = form.save(commit=False)
-
-        current_author = request.user.profile
-        new_id = uuid.uuid4()
-
-        instance.id = new_id
-        instance.author = current_author
-
-        url = instance.get_absolute_url()
-
-        instance.source = url
-        instance.origin = url
-
-        file_content = request.FILES['content']
-        instance.content = base64.b64encode(file_content.read())
-
-        # Upload posts are always unlisted
-        instance.unlisted = True
-
-        instance.save()
-
-        categories_string = form.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                if not instance.categories.filter(name=name).exists():
-                    category = Category.objects.filter(name=name).first()
-
-                    if category is None:
-                        category = Category.objects.create(name=name)
-
-                    instance.categories.add(category)
-
-            instance.save()
-
+        instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(url)
+        return HttpResponseRedirect(instance.get_absolute_url())
+    context = {
+        "form": form,
+    }
+    return render(request, "posts/post_form.html", context)
+
+
+@login_required
+def post_update(request, pk):
+    if not request.user.is_authenticated():
+        raise Http404
+
+    post = get_object_or_404(Post, pk=pk)
+
+    if post.author != request.user.profile:
+        return HttpResponse(status=401)
+
+    if post.is_upload():
+        form = FilePostForm(request.POST or None, request.FILES or None, instance=post)
+    else:
+        form = TextPostForm(request.POST or None, request.FILES or None, instance=post)
+
+    if form.is_valid():
+        instance = form.save(request=request)
+        messages.success(request, "You just updated your post.")
+        return HttpResponseRedirect(instance.get_absolute_url())
     context = {
         "form": form,
     }

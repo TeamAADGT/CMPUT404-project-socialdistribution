@@ -79,9 +79,6 @@ class Post(models.Model):
     unlisted = models.BooleanField(default=False)
 
     def get_absolute_url(self):
-        """
-        Add new posts to database
-        """
         return reverse('app:posts:detail', kwargs={'pk': self.id})
 
     def content_html(self):
