@@ -110,21 +110,6 @@ class DetailView(generic.DetailView):
     template_name = 'posts/detail.html'
 
 
-class PostUpdate(UpdateView):
-    """
-    Post update
-    """
-    model = Post
-    fields = ['post_story', 'use_markdown', 'image']
-    template_name = 'posts/post_form_update.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not author_passes_test(self.get_object(), request):
-            return redirect_to_login(request.get_full_path())
-        return super(PostUpdate, self).dispatch(
-            request, *args, **kwargs)
-
-
 class PostDelete(DeleteView):
     model = Post
     success_url = reverse_lazy('app:posts:index')
