@@ -14,8 +14,8 @@ admin.site.register(Post)
 # Add Comment to Admin Panel
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('author', 'post', 'created')
-    list_filter = ['created']
+    list_display = ('author', 'post', 'published')
+    list_filter = ['published']
     search_fields = ('author', 'body')
 
 
