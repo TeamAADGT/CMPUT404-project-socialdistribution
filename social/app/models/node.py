@@ -14,6 +14,10 @@ class Node(models.Model):
     username = models.CharField(blank=True, max_length=512)
     password = models.CharField(blank=True, max_length=512)
 
+    requires_auth = models.BooleanField(default=True)
+    share_images = models.BooleanField(default=True)
+    share_posts = models.BooleanField(default=True)
+
     def __str__(self):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
