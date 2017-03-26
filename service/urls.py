@@ -4,6 +4,7 @@ from rest_framework import routers
 import service.authors.views
 import service.friendrequest.views
 import service.users.views
+import service.nodes.views
 import service.posts.views
 
 router = routers.DefaultRouter()
