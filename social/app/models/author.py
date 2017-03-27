@@ -90,8 +90,9 @@ class Author(models.Model):
 
     @classmethod
     def get_id_from_uri(cls, uri):
-        match = re.match(r'^(.+)//(.+)/author/(?P<id>[^/]*)', uri)
-        return match.group('id')
+        match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
+        return match.group('pk')
+
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
