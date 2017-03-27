@@ -113,7 +113,7 @@ Sources
 
 * Authorship test idea from http://stackoverflow.com/a/28801123/2557554
   Code from mishbah (http://stackoverflow.com/users/1682844/mishbah)
-  Licensed under CC-BY-SA 3.0 ((https://creativecommons.org/licenses/by-sa/3.0/deed.en)
+  Licensed under CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/deed.en)
 
 * Testing with RequestFactory (https://docs.djangoproject.com/en/1.10/topics/testing/advanced/)
 
@@ -124,3 +124,8 @@ Sources
 
 * Python Requests library (http://docs.python-requests.org/) is licensed under 
   the Apache 2.0 license.
+
+* Environment variable idea by 
+  Danilo Bergen (http://stackoverflow.com/users/284318/danilo-bargen) 
+  From http://stackoverflow.com/a/11189383/2557554 and licensed under 
+  CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/deed.en)
