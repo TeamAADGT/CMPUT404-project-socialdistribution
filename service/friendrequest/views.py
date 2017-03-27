@@ -58,7 +58,9 @@ def friendrequest(request):
             return Response({"detail": "No such friend exists."}, status=status.HTTP_403_FORBIDDEN)
 
         if not friend.activated:
-            return Response({"detail": "You can't friend request an unactivated Author."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You can't friend request an unactivated Author."},
+                status=status.HTTP_403_FORBIDDEN)
 
         if friend.friends_with(remote_author):
             # These two authors are already friends, so this doesn't make sense...

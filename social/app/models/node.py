@@ -9,7 +9,7 @@ class Node(models.Model):
     Represents a local or remote server upon which remote authors and posts reside
     """
     name = models.CharField(max_length=512)
-    host = models.CharField(max_length=512,unique=True)
+    host = models.CharField(max_length=512, unique=True)
     service_url = models.URLField(unique=True)
     local = models.BooleanField(default=False)
 
