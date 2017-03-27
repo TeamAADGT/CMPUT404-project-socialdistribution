@@ -15,9 +15,6 @@ class NodeBasicAuthentication(BasicAuthentication):
     https://devcenter.heroku.com/articles/config-vars#setting-up-config-vars-for-a-deployed-application
     """
 
-    USERNAME_KEY = "SOCDIS_USERNAME"
-    PASSWORD_KEY = "SOCDIS_PASSWORD"
-
     def __init__(self):
         self.node = None
 
@@ -34,18 +31,16 @@ class NodeBasicAuthentication(BasicAuthentication):
             # Request doesn't match a known node -- failed
             raise AuthenticationFailed("Request comes from unknown remote server.")
 
-        if self.node.local or not self.node.requires_auth:
+        if not self.node.requires_auth:
             return self.node, None
 
         return super(NodeBasicAuthentication, self).authenticate(request)
 
     def authenticate_credentials(self, userid, password):
-        if self.USERNAME_KEY in os.environ and self.PASSWORD_KEY in os.environ:
-            expected_username = os.environ[self.USERNAME_KEY]
-            expected_password = os.environ[self.PASSWORD_KEY]
-
-            if expected_username and expected_password \
-                    and userid == expected_username and password == expected_password:
-                return self.node, None
-
-        raise AuthenticationFailed("Invalid username/password.")
+        try:
+            incoming_node = Node.objects.get(
+                host=self.node.host,
+                incoming_username=userid, incoming_password=password)
+            return self.node, None
+        except Node.DoesNotExist:
+            raise AuthenticationFailed("Invalid username/password.")

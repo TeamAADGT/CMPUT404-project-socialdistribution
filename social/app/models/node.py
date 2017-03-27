@@ -18,6 +18,9 @@ class Node(models.Model):
     share_images = models.BooleanField(default=True)
     share_posts = models.BooleanField(default=True)
 
+    incoming_username = models.CharField(unique=True, default='social', blank=True, max_length=512)
+    incoming_password = models.CharField(default='password', blank=True, max_length=512)
+
     def __str__(self):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
