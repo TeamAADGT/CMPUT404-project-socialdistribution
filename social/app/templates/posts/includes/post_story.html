@@ -1,5 +1,15 @@
 {% if post.is_text %}
 <div class="sd-post-story-container">
+    {% if post.title %}
+        <h2 class="sd-post-title">
+            <a target="_blank" href="{% url 'app:posts:detail' post.id %}">{{ post.title }}</a>
+        </h2>
+    {% endif %}
+    {% if post.description %}
+        <div class="sd-post-description">
+            {{ post.description }}
+        </div>
+    {% endif %}
     <div class="sd-post-story">
         {% if short %}
             {# Add a read more link to longer posts #}
