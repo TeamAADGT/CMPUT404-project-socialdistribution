@@ -20,45 +20,51 @@ from social.app.models.post import Post
 
 
 def indexHome(request):
-    # Note: Slight modification to allow for latest posts to be displayed on landing page
+    # Currently displaying / page
+
     if request.user.is_authenticated():
         user = request.user
         author = Author.objects.get(user=request.user.id)
         context = dict()
         context1 = dict()
         context2 = dict()
-        context3 = dict()
 
+        # NOTE: this does the same thing as the function indexHome in app/view.py
         # Return posts that are NOT by current user (=author) and:
 
-        # case 1: posts.visibility=public and following               --> can view
+        # case 1: posts.visibility=public and following                --> can view
         # case 1': posts.visibility=public  and not following          --> can't view
         # case 2': posts.visibility=friends and not friends            --> can't view
         context1['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all()) \
-            .filter(visibility="PUBLIC").order_by('-published')
+            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+            .order_by('-published')
 
-        # case 2: posts.visibility=friends and friends                 --> can view
+        # case 2: posts.visibility=friends and friends and friends on this server --> can view
         context2['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.friends.all()) \
-            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC")).order_by('-published')
-
-
-
+            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+            .order_by('-published')
 
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        friends = author.friends.all()
-        foafs = list()
-        #print(friends)
+        context3 = dict()
+        friends = set(f.id for f in author.friends.all())
+        print ("friends", friends)
+        foafs = set()
 
+        # Get all the foafs
         for friend in friends:
-            new_foafs = friend.friends.all()
-            foafs.append(new_foafs)
+            friend_obj = Author.objects.get(pk=friend)
+            # print ("friend obj", friend_obj)
+            new_foafs = set(ff.id for ff in friend_obj.friends.all())
+            # print ("new foafs", new_foafs)
+            foafs.update(new_foafs)
 
-        #print(foafs)
+        foafs.update(friends)
+        # print("foafs", foafs)
 
         context3['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
@@ -97,7 +103,8 @@ def view_posts(request):
         context1['user_posts'] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all()) \
-            .filter(visibility="PUBLIC").order_by('-published')
+            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+            .order_by('-published')
 
         # case 2: posts.visibility=friends and friends and friends on this server --> can view
         context2['user_posts'] = Post.objects \
@@ -110,7 +117,7 @@ def view_posts(request):
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         context3 = dict()
         friends = set(f.id for f in author.friends.all())
-        print ("friends", friends)
+        #print ("friends", friends)
         foafs = set()
 
         # Get all the foafs
@@ -129,8 +136,10 @@ def view_posts(request):
             .filter(Q(author__id__in=foafs)) \
             .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
 
+        # case 4: posts.visibility=public and
+
         # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 4: posts.visibility=private                             --> can't see
+        # case 5: posts.visibility=private                             --> can't see
 
 
         # Set context
