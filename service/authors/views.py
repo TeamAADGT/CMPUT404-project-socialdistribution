@@ -1,13 +1,12 @@
-from rest_framework import serializers
 from rest_framework import viewsets, status
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import detail_route, authentication_classes
+from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from service.authentication.node_basic import NodeBasicAuthentication
-from service.authors.serializers import AuthorSerializer, SimpleAuthorSerializer, AuthorURLSerializer
+from service.authors.serializers import AuthorSerializer, AuthorURLSerializer
 from social.app.models.author import Author
 
 
@@ -16,14 +15,13 @@ class AuthorViewSet(viewsets.ModelViewSet):
     serializer_class = AuthorSerializer
     permission_classes = (IsAuthenticated,)
 
-    @detail_route(methods=["GET"])
-    @authentication_classes((NodeBasicAuthentication,))
+    @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def friends(self, request, pk=None):
         try:
             friends = self.get_object().friends.all()
         except Author.DoesNotExist:
             return Response(
-                {'detail': 'The author you wanted to follow could not be found.'},
+                {'detail': 'Author not found.'},
                 status=status.HTTP_404_NOT_FOUND)
 
         return Response(
@@ -31,8 +29,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
              "authors": AuthorURLSerializer(friends, context={'request': request}, many=True).data},
             status=status.HTTP_200_OK)
 
-    @detail_route(methods=["POST"])
-    @authentication_classes((SessionAuthentication,))
+    @detail_route(methods=["POST"], authentication_classes=(SessionAuthentication,))
     def follow(self, request, pk=None):
 
         follower = request.user.profile
@@ -66,8 +63,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
             {"followed_author": reverse("service:author-detail", kwargs={'pk': followee.id}, request=request)},
             status=status.HTTP_200_OK)
 
-    @detail_route(methods=["POST"])
-    @authentication_classes((SessionAuthentication,))
+    @detail_route(methods=["POST"], authentication_classes=(SessionAuthentication,))
     def unfollow(self, request, pk=None):
 
         unfollower = request.user.profile
@@ -101,8 +97,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
             {"unfollowed_author": reverse("service:author-detail", kwargs={'pk': followee.id}, request=request)},
             status=status.HTTP_200_OK)
 
-    @detail_route(methods=["POST"])
-    @authentication_classes((SessionAuthentication,))
+    @detail_route(methods=["POST"], authentication_classes=(SessionAuthentication,))
     def friendrequest(self, request, pk=None):
 
         current_author = request.user.profile
