@@ -1,0 +1,5 @@
+<h4>{{ post.author.displayName }}</h4>
+<small class="sd-post-info">{{ post.published }}</small>
+{% if post.categories_string %}
+    <small class="sd-post-info">Categories: {{ post.categories_string }}</small>
+{% endif %}

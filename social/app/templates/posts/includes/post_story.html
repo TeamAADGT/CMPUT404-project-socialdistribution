@@ -1,0 +1,40 @@
+{% if post.is_text %}
+<div class="sd-post-story-container">
+    {% if post.title %}
+        <h2 class="sd-post-title">
+            <a target="_blank" href="{% url 'app:posts:detail' post.id %}">{{ post.title }}</a>
+        </h2>
+    {% endif %}
+    {% if post.description %}
+        <div class="sd-post-description">
+            {{ post.description }}
+        </div>
+    {% endif %}
+    <div class="sd-post-story">
+        {% if short %}
+            {# Add a read more link to longer posts #}
+            {{ post.content_html | safe | truncatechars_html:250 }}
+
+            {% if post.content|length >= 250 %}
+                <div>
+                    <a target="_blank" href="{% url 'app:posts:detail' post.id %}">Read More</a>
+                </div>
+            {% endif %}
+        {% else %}
+            {{ post.content_html | safe }}
+        {% endif %}
+    </div>
+</div>
+{% elif post.is_image %}
+    <div class="sd-post-media-container sd-margin-top-20">
+        <img class="img-responsive img-rounded"
+             src="{{ post.upload_url }}"
+             alt="Post picture">
+    </div>
+{% elif post.is_file %}
+    <div class="sd-post-media-container sd-margin-top-20">
+        <a href="{{ post.upload_url }}" target="_blank">
+            Right-click > Save this link to download the file.
+        </a>
+    </div>
+{% endif %}
