@@ -10,6 +10,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
+from os import environ
 import dj_database_url
 
 # Build paths inside the social like this: os.path.join(BASE_DIR, ...)
@@ -88,8 +89,19 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    'default2': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db2.sqlite3'),
     }
 }
+
+# Environment variable idea by
+# Danilo Bergen (http://stackoverflow.com/users/284318/danilo-bargen)
+# From http://stackoverflow.com/a/11189383/2557554 and licensed under
+# CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/deed.en)
+default_database = environ.get('DJANGO_DATABASE', 'main')
+DATABASES['default'] = DATABASES[default_database]
 
 AUTH_PASSWORD_VALIDATORS = [
     {
