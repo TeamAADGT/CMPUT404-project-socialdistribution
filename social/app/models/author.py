@@ -93,6 +93,7 @@ class Author(models.Model):
         match = re.match(r'^(.+)//(.+)/author/(?P<id>[^/]*)', uri)
         return match.group('id')
 
+
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
     if not user.is_staff and kwargs["created"]:

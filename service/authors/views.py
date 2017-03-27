@@ -1,3 +1,4 @@
+import requests
 from rest_framework import viewsets, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import detail_route
@@ -129,8 +130,37 @@ class AuthorViewSet(viewsets.ModelViewSet):
                 {"detail": "Unactivated authors cannot be friend requested."},
                 status=status.HTTP_403_FORBIDDEN)
 
-        current_author.add_friend_request(target)
+        if target.node.local:
+            current_author.add_friend_request(target)
+        else:
+            r = requests.post(
+                target.node.service_url + "friendrequest/",
+                data={
+                    "query": "friendrequest",
+                    "author": {
+                        "id": reverse("service:author-detail", request=request),
+                        "host": current_author.node.service_url,
+                        "displayName": current_author.displayName,
+                        "url": reverse("service:author-detail", request=request),
+                    },
+                    "friend": {
+                        "id": target.node.service_url + "author/" + target.id,
+                        "host": target.node.service_url,
+                        "displayName": target.displayName,
+                        "url": target.node.service_url + "author/" + target.id,
+                    }
+                })
+
+            if 200 <= r.status_code < 300:
+                # Success!
+                current_author.add_friend_request(target)
+            else:
+                return Response(
+                    {"detail": "Remote friend request failed."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         return Response(
-            {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
+            {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id},
+                                                request=request)},
             status=status.HTTP_200_OK)
