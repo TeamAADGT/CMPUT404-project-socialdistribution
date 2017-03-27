@@ -17,6 +17,7 @@ from social.app.models.author import Author
 from social.app.models.category import Category
 from social.app.models.comment import Comment
 from social.app.models.post import Post
+from social.app.models.node import Node
 
 
 def indexHome(request):
@@ -176,7 +177,12 @@ class PostDelete(DeleteView):
 def get_upload_file(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    if not post.is_upload():
+    user = request.user
+    author = Author.objects.get(user=request.user.id)
+    node = Node.objects.get(host=author.node.host)
+
+    # get_is_authenticated is always True right now
+    if not post.is_upload() or node.share_images is False or node.get_is_authenticated() is False:
         # doesn't make sense to do this
         return HttpResponseForbidden()
 
