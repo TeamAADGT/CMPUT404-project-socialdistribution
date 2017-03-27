@@ -22,14 +22,19 @@ class NodeBasicAuthentication(BasicAuthentication):
         self.node = None
 
     def authenticate(self, request):
-        host = request.META["REMOTE_HOST"]
+        host = request.META["REMOTE_HOST"] or request.META["REMOTE_ADDR"]
+
+        if host == "127.0.0.1" and request.META["SERVER_PORT"] != "80":
+            # For local testing purposes
+            host = "%s:%s" % (host, request.META["SERVER_PORT"])
+
         try:
             self.node = Node.objects.get(host=host)
         except Node.DoesNotExist:
             # Request doesn't match a known node -- failed
             raise AuthenticationFailed("Request comes from unknown remote server.")
 
-        if not self.node.requires_auth:
+        if self.node.local or not self.node.requires_auth:
             return self.node, None
 
         return super(NodeBasicAuthentication, self).authenticate(request)

@@ -23,11 +23,11 @@ class LocalNodeMiddleware(object):
             service_url = host + "service/"
 
             if len(nodes) == 0:
-                node = Node(name="Local", host=host, service_url=service_url, local=True)
+                node = Node(name="Local", host=request.get_host(), service_url=service_url, local=True)
                 node.save()
             elif len(nodes) == 1:
                 node = nodes[0]
-                node.host = host
+                node.host = request.get_host()
                 node.service_url = service_url
                 node.save()
             else:

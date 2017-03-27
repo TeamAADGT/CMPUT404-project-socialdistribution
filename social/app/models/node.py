@@ -7,7 +7,7 @@ class Node(models.Model):
     Represents a local or remote server upon which remote authors and posts reside
     """
     name = models.CharField(max_length=512)
-    host = models.URLField(unique=True)
+    host = models.CharField(max_length=512,unique=True)
     service_url = models.URLField(unique=True)
     local = models.BooleanField(default=False)
 
@@ -28,3 +28,8 @@ class Node(models.Model):
     def get_author_friends(self, uuid):
         url = self.service_url + "/author/" + str(uuid) + "/friends"
         return requests.get(url, auth=(self.username, self.password))
+
+    def get_is_authenticated(self):
+        return True
+
+    is_authenticated = property(get_is_authenticated)
