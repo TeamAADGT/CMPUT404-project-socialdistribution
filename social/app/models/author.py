@@ -1,5 +1,6 @@
 import uuid
 
+import re
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
@@ -87,6 +88,10 @@ class Author(models.Model):
     def __str__(self):
         return '%s, %s (%s)' % (self.user.last_name, self.user.first_name, self.displayName)
 
+    @classmethod
+    def get_id_from_uri(cls, uri):
+        match = re.match(r'^(.+)//(.+)/author/(?P<id>[^/]*)', uri)
+        return match.group('id')
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]

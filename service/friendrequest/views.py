@@ -13,7 +13,6 @@ from social.app.models.author import Author
 @permission_classes((IsAuthenticated,))
 def friendrequest(request):
     """
-    Currently not implemented.
     Example </br>
     <pre>
     {
@@ -33,29 +32,47 @@ def friendrequest(request):
     }
     </pre>
     """
-    # Needs to be revamped to support remote authors
-    # Return 501 Not Implemented
-    return Response(status=501)
 
-    # serializer = FriendRequestSerializer(data=request.data)
-    #
-    # if serializer.is_valid():
-    #     friend_request = serializer.save()
-    #
-    #     # TODO: Add code to handle case when one or more users are remote
-    #     author_id = friend_request.author.get_id_without_url()
-    #     friend_id = friend_request.friend.get_id_without_url()
-    #
-    #     author = Author.objects.get(id=author_id)
-    #
-    #     # TODO: Allow for case where remote server submitted this on behalf of another user
-    #     if author.user_id != request.user.id:
-    #         return Response(status=status.HTTP_403_FORBIDDEN)
-    #
-    #     friend = Author.objects.get(id=friend_id)
-    #
-    #     author.add_friend_request(friend)
-    #     author.save()
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-    #
-    # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    remote_node = request.user
+
+    serializer = FriendRequestSerializer(data=request.data)
+
+    if serializer.is_valid():
+        friend_request = serializer.save()
+
+        # Another node is sending this on behalf of one of their local authors,
+        # so this is a remote author
+        remote_author_id = Author.get_id_from_uri(friend_request.author.id)
+
+        # The target of the request is local
+        friend_id = Author.get_id_from_uri(friend_request.friend.id)
+
+        try:
+            remote_author = Author.objects.get(id=remote_author_id)
+        except Author.DoesNotExist:
+            remote_author = remote_node.create_or_update_remote_author(remote_author_id)
+
+        try:
+            friend = Author.objects.get(id=friend_id)
+        except Author.DoesNotExist:
+            return Response({"detail": "No such friend exists."}, status=status.HTTP_403_FORBIDDEN)
+
+        if not friend.activated:
+            return Response({"detail": "You can't friend request an unactivated Author."}, status=status.HTTP_403_FORBIDDEN)
+
+        if friend.friends_with(remote_author):
+            # These two authors are already friends, so this doesn't make sense...
+            return Response({"detail": "These two Authors are already friends."}, status=status.HTTP_403_FORBIDDEN)
+
+        if friend.has_outgoing_friend_request_for(remote_author):
+            # This is a friend confirmation request
+            friend.accept_friend_request(remote_author)
+        elif not friend.has_incoming_friend_request_from(remote_author):
+            # if the target already has a friend request pending, this is redundant
+            remote_author.add_friend_request(friend)
+
+        remote_author.save()
+        friend.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

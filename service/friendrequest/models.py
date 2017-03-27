@@ -15,7 +15,3 @@ class FriendRequestAuthor(object):
         self.host = host
         self.displayName = displayName
         self.url = url
-
-    def get_id_without_url(self):
-        match = re.match(r'^(.+)//(.+)/author/(?P<id>[^/]*)', self.id)
-        return match.group('id')

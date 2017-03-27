@@ -1,6 +1,8 @@
 import requests
 from django.db import models
 
+from social.app.models.author import Author
+
 
 class Node(models.Model):
     """
@@ -31,6 +33,32 @@ class Node(models.Model):
     def get_author_friends(self, uuid):
         url = self.service_url + "/author/" + str(uuid) + "/friends"
         return requests.get(url, auth=(self.username, self.password))
+
+    def create_or_update_remote_author(self, uuid):
+        json = self.get_author(uuid).json()
+        author = Author.objects.update_or_create(
+            id=Author.get_id_from_uri(json["id"]),
+            displayName=json["displayName"],
+            node=self
+        )
+
+        if "github" in json:
+            author.github = json["github"]
+
+        if "firstName" in json:
+            author.user.first_name = json["firstName"]
+
+        if "lastName" in json:
+            author.user.last_name = json["lastName"]
+
+        if "email" in json:
+            author.user.email = json["email"]
+
+        if "bio" in json:
+            author.bio = json["bio"]
+
+        author.save()
+        return author
 
     def get_is_authenticated(self):
         return True

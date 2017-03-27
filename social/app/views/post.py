@@ -36,14 +36,12 @@ def indexHome(request):
         # case 1': posts.visibility=public  and not following          --> can't view
         # case 2': posts.visibility=friends and not friends            --> can't view
         context1['user_posts'] = Post.objects \
-            .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all()) \
             .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
         # case 2: posts.visibility=friends and friends and friends on this server --> can view
         context2['user_posts'] = Post.objects \
-            .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.friends.all()) \
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
