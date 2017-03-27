@@ -100,7 +100,7 @@ DATABASES = {
 # Danilo Bergen (http://stackoverflow.com/users/284318/danilo-bargen)
 # From http://stackoverflow.com/a/11189383/2557554 and licensed under
 # CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/deed.en)
-default_database = environ.get('DJANGO_DATABASE', 'main')
+default_database = environ.get('DJANGO_DATABASE', 'default')
 DATABASES['default'] = DATABASES[default_database]
 
 AUTH_PASSWORD_VALIDATORS = [
