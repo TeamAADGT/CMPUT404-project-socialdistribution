@@ -1,8 +1,6 @@
 import requests
 from django.db import models
 
-from social.app.models.author import Author
-
 
 class Node(models.Model):
     """
@@ -36,6 +34,7 @@ class Node(models.Model):
 
     def create_or_update_remote_author(self, uuid):
         json = self.get_author(uuid).json()
+        from social.app.models.author import Author
         author = Author.objects.update_or_create(
             id=Author.get_id_from_uri(json["id"]),
             displayName=json["displayName"],
