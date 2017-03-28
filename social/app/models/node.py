@@ -1,5 +1,9 @@
+import json
+import re
+
 import requests
 from django.db import models
+from django.db.models.signals import post_save
 
 
 class Node(models.Model):
@@ -25,12 +29,20 @@ class Node(models.Model):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
     def get_author(self, uuid):
-        url = self.service_url + "/author/" + str(uuid)
-        return requests.get(url, auth=(self.username, self.password))
+        url = self.service_url + "author/" + str(uuid)
+        return requests.get(url, auth=(self.username, self.password)).json()
 
     def get_author_friends(self, uuid):
-        url = self.service_url + "/author/" + str(uuid) + "/friends"
-        return requests.get(url, auth=(self.username, self.password))
+        url = self.service_url + "author/" + str(uuid) + "/friends"
+        return requests.get(url, auth=(self.username, self.password)).json()
+
+    def get_author_posts(self):
+        url = self.service_url + "author/posts"
+        return requests.get(url, auth=(self.username, self.password)).json()
+
+    def get_public_posts(self):
+        url = self.service_url + "posts"
+        return requests.get(url, auth=(self.username, self.password)).json()
 
     def create_or_update_remote_author(self, uuid):
         json = self.get_author(uuid).json()
@@ -63,3 +75,34 @@ class Node(models.Model):
         return True
 
     is_authenticated = property(get_is_authenticated)
+
+
+# TODO This post_save hook is untested!
+def init_friends(sender, **kwargs):
+    node = kwargs["instance"]
+    if node.local is False:
+        from social.app.models.author import Author
+        authors = Author.objects.filter(node=node)
+        for author in authors:
+            for uri in node.get_author_friends(author.id).authors:
+                uri = Author.get_id_from_uri(uri)
+                # Simplifying assumption that there isn't a uri collision
+                new_author_profile_json = node.get_author(uri)
+                new_author = Author.objects.update_or_create(
+                    id=uri,
+                    displayName=new_author_profile_json['displayName'],
+                    url=new_author_profile_json['url'],
+                    node=node)
+
+                new_author_friends_json = new_author.new_author_profile.friends
+                for new_author_friend_json in new_author_friends_json:
+                    # id, host, displayName, and url are available
+                    new_author_friend_node = Node.objects.get_or_create(host=new_author_friends_json['host'])
+                    new_author.friends.update_or_create(
+                        id=uri,
+                        displayName=new_author_profile_json['displayName'],
+                        url=new_author_profile_json['url'],
+                        node=new_author_friend_node)
+
+
+post_save.connect(init_friends, sender=Node)
