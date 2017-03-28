@@ -5,12 +5,6 @@ from social.app.models.post import Post
 
 
 class PostSerializer(serializers.HyperlinkedModelSerializer):
-    id = serializers.HyperlinkedIdentityField(
-        view_name="service:post-detail",
-        read_only=True,
-        lookup_field="pk"
-    )
-
     author = SimpleAuthorSerializer()
 
     contentType = serializers.CharField(source="content_type", read_only=True)

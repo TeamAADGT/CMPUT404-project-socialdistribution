@@ -114,11 +114,6 @@ class Post(models.Model):
     def upload_url(self):
         return reverse('app:posts:upload-view', kwargs={'pk': self.id})
 
-    @classmethod
-    def get_id_from_uri(cls, uri):
-        match = re.match(r'^(.+)//(.+)/posts/(?P<pk>[0-9a-z\\-]+)', uri)
-        return match.group('pk')
-
 
 def keys(tuple_list):
     """

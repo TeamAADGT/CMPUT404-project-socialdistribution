@@ -33,7 +33,7 @@ def get_remote_node_posts():
                 displayName=author_json['displayName'],
             )
             post = Post(
-                id=Post.get_id_from_uri(post_json['id']),
+                id=post_json['id'],
                 title=post_json['title'],
                 source=post_json['source'],
                 origin=post_json['origin'],
