@@ -96,7 +96,11 @@ def indexHome(request):
         # case 4: posts.visibility=private                             --> can't see
 
         # Get node posts
-        node_posts = get_remote_node_posts()
+        # Avoid a possible ConnectionError
+        try:
+            node_posts = get_remote_node_posts()
+        except Exception:
+            node_posts = list()
 
         all_posts = list(
             chain(
@@ -171,7 +175,11 @@ def view_posts(request):
 
 
         # Get node posts
-        node_posts = get_remote_node_posts()
+        # Avoid a possible ConnectionError
+        try:
+            node_posts = get_remote_node_posts()
+        except Exception:
+            node_posts = list()
 
         all_posts = list(
             chain(
