@@ -16,6 +16,8 @@ class AuthorURLSerializer(serializers.ModelSerializer):
 
 
 class SimpleAuthorSerializer(serializers.ModelSerializer):
+    id = serializers.HyperlinkedIdentityField(
+        view_name='service:author-detail', read_only=True, lookup_field='pk')
     host = serializers.CharField(source='node.service_url')
     url = serializers.HyperlinkedIdentityField(
         view_name='service:author-detail', read_only=True, lookup_field='pk')
@@ -26,6 +28,8 @@ class SimpleAuthorSerializer(serializers.ModelSerializer):
 
 
 class AuthorSerializer(serializers.ModelSerializer):
+    id = serializers.HyperlinkedIdentityField(
+        view_name='service:author-detail', read_only=True, lookup_field='pk')
     host = serializers.URLField(source='node.service_url')
     url = serializers.HyperlinkedIdentityField(
         view_name='service:author-detail', read_only=True, lookup_field='pk')

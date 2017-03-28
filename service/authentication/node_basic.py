@@ -19,7 +19,7 @@ class NodeBasicAuthentication(BasicAuthentication):
         self.node = None
 
     def authenticate(self, request):
-        host = request.META["REMOTE_HOST"] or request.META["REMOTE_ADDR"]
+        host = request.META["SERVER_NAME"] or request.META["SERVER_PORT"]
 
         if (host == '127.0.0.1' or host == 'localhost') and request.META["SERVER_PORT"] != "80":
             # For local testing purposes

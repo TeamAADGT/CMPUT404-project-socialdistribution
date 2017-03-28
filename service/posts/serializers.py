@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from service.authors.serializers import SimpleAuthorSerializer
 from social.app.models.post import Post
 
 
@@ -10,11 +11,7 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
         lookup_field="pk"
     )
 
-    author = serializers.HyperlinkedRelatedField(
-        view_name="service:author-detail",
-        read_only=True,
-        lookup_field="pk"
-    )
+    author = SimpleAuthorSerializer()
 
     contentType = serializers.CharField(source="content_type", read_only=True)
 
