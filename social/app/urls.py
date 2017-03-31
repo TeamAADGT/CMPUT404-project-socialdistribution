@@ -21,7 +21,8 @@ posts_urlpatterns = [
     url(r'(?P<pk>[0-9a-z\\-]+)/edit/$', post_views.post_update, name='posts-update'),
 
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/delete/
-    url(r'(?P<pk>[0-9a-z\\-]+)/delete/$', post_views.PostDelete.as_view(), name='posts-delete'),
+    url(r'(?P<pk>[0-9a-z\\-]+)/delete/$', post_views.post_delete, name='posts-delete'),
+
 
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/comment
     url(r'(?P<pk>[0-9a-z\\-]+)/comment/$', post_views.add_comment_to_post, name='add_comment_to_post'),
