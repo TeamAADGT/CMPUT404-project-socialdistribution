@@ -9,7 +9,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.db.models import Q, F
 from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views import generic
 from django.views.generic import UpdateView, DeleteView
 
@@ -44,9 +44,9 @@ def get_remote_node_posts():
             node_posts.append(post)
     return node_posts
 
+
 def indexHome(request):
     # Currently displaying / page
-
     if request.user.is_authenticated():
         user = request.user
         author = Author.objects.get(user=request.user.id)
@@ -208,17 +208,6 @@ class DetailView(generic.DetailView):
     template_name = 'posts/detail.html'
 
 
-class PostDelete(DeleteView):
-    model = Post
-    success_url = reverse_lazy('app:posts:index')
-
-    def dispatch(self, request, *args, **kwargs):
-        if not author_passes_test(self.get_object(), request):
-            return redirect_to_login(request.get_full_path())
-        return super(PostDelete, self).dispatch(
-            request, *args, **kwargs)
-
-
 def get_upload_file(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
@@ -279,6 +268,29 @@ def post_upload(request):
     return render(request, "posts/post_form.html", context)
 
 
+# Delete a particular post
+@login_required
+def post_delete(request, pk):
+    if not request.user.is_authenticated():
+        raise Http404
+
+    post = get_object_or_404(Post, pk=pk)
+
+    if post.author != request.user.profile:
+        return HttpResponse(status=401)
+
+    post.delete()
+
+    # How to pass argument to reverse
+    # By igor(https://stackoverflow.com/users/978434/igor)
+    # On StackOverflow url: https://stackoverflow.com/questions/15703475/how-to-make-reverse-lazy-lazy-for-arguments-too
+    # License: CC-BY-SA 3.0
+    success_url = reverse('app:authors:posts-by-author', kwargs = {'pk' : request.user.profile.id, })
+    # Upon success redirects user to /authors/<current_user_guid>/posts/
+    return HttpResponseRedirect(success_url)
+
+
+# Update a particular post
 @login_required
 def post_update(request, pk):
     if not request.user.is_authenticated():

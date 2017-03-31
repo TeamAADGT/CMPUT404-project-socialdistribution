@@ -129,3 +129,8 @@ Sources
   Danilo Bergen (http://stackoverflow.com/users/284318/danilo-bargen) 
   From http://stackoverflow.com/a/11189383/2557554 and licensed under 
   CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/deed.en)
+
+* How to pass argument to reverse
+  By igor(https://stackoverflow.com/users/978434/igor)
+  On StackOverflow url: https://stackoverflow.com/questions/15703475/how-to-make-reverse-lazy-lazy-for-arguments-too
+  License: CC-BY-SA 3.0
