@@ -82,6 +82,7 @@ class Author(models.Model):
         if self.incoming_friend_requests.filter(id=author.id):
             self.incoming_friend_requests.remove(author)
             self.friends.add(author)
+            self.followed_authors.add(author)
         else:
             raise Exception("Attempted to accept a friend request that does not exist.")
 
