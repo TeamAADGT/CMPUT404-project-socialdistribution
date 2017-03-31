@@ -1,22 +1,18 @@
 import base64
-import uuid
 from itertools import chain
 from operator import attrgetter
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import redirect_to_login
 from django.db.models import Q, F
 from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse
 from django.views import generic
-from django.views.generic import UpdateView, DeleteView
 
 from social.app.forms.comment import CommentForm
 from social.app.forms.post import TextPostForm, FilePostForm
 from social.app.models.author import Author
-from social.app.models.category import Category
 from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
