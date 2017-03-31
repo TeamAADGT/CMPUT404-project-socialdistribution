@@ -1,6 +1,4 @@
 import base64
-from itertools import chain
-from operator import attrgetter
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -41,157 +39,94 @@ def get_remote_node_posts():
     return node_posts
 
 
-def indexHome(request):
-    # Currently displaying / page
-    if request.user.is_authenticated():
+def get_home(request):
+    """
+    Get /
+    """
+    if request.user.is_authenticated(): # Redirects user to /posts/
         user = request.user
         author = Author.objects.get(user=request.user.id)
         context = dict()
+        success_url = reverse('app:posts:index')
+        return HttpResponseRedirect(success_url)
 
-        # NOTE: this does the same thing as the function indexHome in app/view.py
-        # Return posts that are NOT by current user (=author) and:
-
-        # case 1: posts.visibility=public and following                --> can view
-        # case 1': posts.visibility=public  and not following          --> can't view
-        # case 2': posts.visibility=friends and not friends            --> can't view
-        public_and_following_posts = Post.objects \
-            .filter(author__id__in=author.followed_authors.all()) \
-            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
-
-        # case 2: posts.visibility=friends and friends and friends on this server --> can view
-        friend_posts = Post.objects \
-            .filter(author__id__in=author.friends.all()) \
-            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
-
-        # case 3: posts.visibility=foaf and friend/foaf                --> can view
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        context3 = dict()
-        friends = set(f.id for f in author.friends.all())
-        print ("friends", friends)
-        foafs = set()
-
-        # Get all the foafs
-        for friend in friends:
-            friend_obj = Author.objects.get(pk=friend)
-            # print ("friend obj", friend_obj)
-            new_foafs = set(ff.id for ff in friend_obj.friends.all())
-            # print ("new foafs", new_foafs)
-            foafs.update(new_foafs)
-
-        foafs.update(friends)
-        # print("foafs", foafs)
-
-        foaf_posts = Post.objects \
-            .filter(~Q(author__id=user.profile.id)) \
-            .filter(Q(author__id__in=foafs)) \
-            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
-
-        # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 4: posts.visibility=private                             --> can't see
-
-        # Get node posts
-        # Avoid a possible ConnectionError
-        try:
-            node_posts = get_remote_node_posts()
-        except Exception:
-            node_posts = list()
-
-        all_posts = list(
-            chain(
-                public_and_following_posts,
-                friend_posts,
-                foaf_posts,
-                node_posts
-            )
-        )
-
-        context["user_posts"] = sorted(all_posts, key=attrgetter('published'))
-
-        return render(request, 'app/index.html', context)
-    else:
-        # Return all posts on present on the site
+    else: # Shows all public posts
         context = dict()
-        context['all_posts'] = Post.objects.all().order_by('-published')
+        context['all_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
         return render(request, 'app/landing.html', context)
 
 
-def view_posts(request):
+def get_posts(request):
+    """
+    Get /posts/
+    """
+    context = dict()
+
+    # User views "My Feed"
     if request.user.is_authenticated():
         user = request.user
         author = Author.objects.get(user=request.user.id)
-        context = dict()
 
-        # NOTE: this does the same thing as the function indexHome in app/view.py
-        # Return posts that are NOT by current user (=author) and:
+        # NOTE: this code is similar to view_posts_by_author in social/app/views/author.py
+        # BUT this code *filters* on "following"
 
-        # case 1: posts.visibility=public and following                --> can view
-        # case 1': posts.visibility=public  and not following          --> can't view
-        # case 2': posts.visibility=friends and not friends            --> can't view
-        public_and_following_posts = Post.objects \
+        # case I: posts.visibility=public and following
+        public_and_following_posts = dict()
+        public_and_following_posts["user_posts"] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all()) \
             .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
-        # case 2: posts.visibility=friends and friends and friends on this server --> can view
-        friend_posts = Post.objects \
+        # case II: posts.visibility=friends
+        friend_posts = dict()
+        friend_posts["user_posts"] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
+            .filter(author__id__in=author.followed_authors.all()) \
             .filter(author__id__in=author.friends.all()) \
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
-        # case 3: posts.visibility=foaf and friend/foaf                --> can view
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        friends = set(f.id for f in author.friends.all())
-        # print ("friends", friends)
+        # case III: posts.visibility=foaf
+        friends_list = set(f.id for f in author.friends.all())
         foafs = set()
 
-        # Get all the foafs
-        for friend in friends:
+        for friend in friends_list:
             friend_obj = Author.objects.get(pk=friend)
-            # print ("friend obj", friend_obj)
             new_foafs = set(ff.id for ff in friend_obj.friends.all())
-            # print ("new foafs", new_foafs)
             foafs.update(new_foafs)
+        foafs.update(friends_list)
 
-        foafs.update(friends)
-        # print("foafs", foafs)
-
-        foaf_posts = Post.objects \
+        # TODO: Should you have to explicitly follow a foaf to see their posts in your feed?
+        # This code assumes the answer to that question is yes.
+        foaf_posts = dict()
+        foaf_posts["user_posts"] = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
             .filter(Q(author__id__in=foafs)) \
+            .filter(author__id__in=author.followed_authors.all()) \
             .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
 
-        # case 4: posts.visibility=public and
+        # TODO: case IV: posts.visibility=private
 
-        # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 5: posts.visibility=private                             --> can't see
-
-
-        # Get node posts
-        # Avoid a possible ConnectionError
+        # Case V: Get other node posts
+        # TODO: need to filter these based on remote author's relationship to current user.
+        node_posts = dict()
         try:
-            node_posts = get_remote_node_posts()
-        except Exception:
-            node_posts = list()
+            node_posts["user_posts"] = get_remote_node_posts()
+            if node_posts["user_posts"] == []:
+                node_posts["user_posts"] = Post.objects.none()
+        except Exception: # Avoid a possible ConnectionError
+            node_posts["user_posts"] = Post.objects.none()
 
-        all_posts = list(
-            chain(
-                public_and_following_posts,
-                friend_posts,
-                foaf_posts,
-                node_posts
-            )
-        )
-
-        context["user_posts"] = sorted(all_posts, key=attrgetter('published'))
+        context["user_posts"] = public_and_following_posts["user_posts"] | \
+                                friend_posts["user_posts"] | \
+                                foaf_posts["user_posts"] | \
+                                node_posts["user_posts"]
 
         return render(request, 'app/index.html', context)
+
+    # Not authenticated
     else:
-        # Return all posts on present on the site
-        context = dict()
         context['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
         return render(request, 'app/index.html', context)
 

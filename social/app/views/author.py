@@ -11,54 +11,89 @@ from django.db.models import Q
 from social.app.forms.user_profile import UserFormUpdate
 from social.app.models.author import Author
 from social.app.models.post import Post
+from social.app.views.post import get_remote_node_posts
 
 
-def view_posts_by_author(request, pk):
+def get_posts_by_author(request, pk):
+    """
+    Get /authors/<author_guid>/posts/
+    """
     current_user = request.user
     author = Author.objects.get(id=pk)
     author_guid = str(pk)
     current_author = Author.objects.get(user=request.user.id)
     current_author_guid = str(current_author.id)
+    context = dict()
+    context['show_add_post_button'] = "false"
 
-    # If current user is authenticated and the guid in the url is the same as the current user's guid
-    # then show them their own posts
+    # Current user views their own posts
     if current_user.is_authenticated() and current_author_guid == author_guid:
-        context = dict()
-        # Return all posts by current user
         context['user_posts'] = Post.objects.filter(author__id=current_user.profile.id).order_by('-published')
         context['show_add_post_button'] = "true"
         return render(request, 'app/index.html', context)
 
-    # If the current user is authenticated only show them the posts that are visible to them
+    # Current user views another author's posts
     elif current_user.is_authenticated():
-        context = dict()
-        context1 = dict()
-        context2 = dict()
+        # NOTE: this code is similar to code in social/app/views/post.py
+        # BUT this code *does not filter* on "following"
 
-        # case 1:  posts.visibility=public and following               --> can view
-        # case 1': posts.visibility=public  and not following          --> can view
-        # case 2': posts.visibility=friends and not friends            --> can't view
-        context1['user_posts'] = Post.objects \
+        # case I: posts.visibility=public
+        public_posts = dict()
+        public_posts["user_posts"] = Post.objects \
             .filter(author__id=author.id) \
-            .filter(visibility="PUBLIC").order_by('-published')
+            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+            .order_by('-published')
 
-        # case 2: posts.visibility=friends and friends                 --> can view
-        context2['user_posts'] = Post.objects \
+        # case II: posts.visibility=friends
+        friend_posts = dict()
+        friend_posts["user_posts"] = Post.objects \
             .filter(author__id=author.id) \
             .filter(author__id__in=current_author.friends.all()) \
-            .filter(visibility="FRIENDS").order_by('-published')
+            .filter(~Q(author__id=current_user.profile.id)) \
+            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+            .order_by('-published')
 
-        context["user_posts"] = context1["user_posts"] | context2["user_posts"]
-        context['show_add_post_button'] = "false"
+        # case III: posts.visibility=foaf
+        friends_list = set(f.id for f in current_author.friends.all())
+        foafs = set()
+
+        for friend in friends_list:
+            friend_obj = Author.objects.get(pk=friend)
+            new_foafs = set(ff.id for ff in friend_obj.friends.all())
+            foafs.update(new_foafs)
+        foafs.update(friends_list)
+
+        foaf_posts = dict()
+        foaf_posts["user_posts"] = Post.objects \
+            .filter(author__id=author.id) \
+            .filter(Q(author__id__in=foafs)) \
+            .filter(~Q(author__id=current_user.profile.id)) \
+            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
+
+        # TODO: case IV: posts.visibility=private
+
+        # Case V: Get other node posts
+        # TODO: need to filter these based on remote author's relationship to current user.
+        node_posts = dict()
+        try:
+            node_posts["user_posts"] = get_remote_node_posts()
+            if node_posts["user_posts"] == []:
+                node_posts["user_posts"] = Post.objects.none()
+        except Exception: # Avoid a possible ConnectionError
+            node_posts["user_posts"] = Post.objects.none()
+
+        context["user_posts"] = public_posts["user_posts"] | \
+            friend_posts["user_posts"] | \
+            foaf_posts["user_posts"] | \
+            node_posts["user_posts"]
+
         return render(request, 'app/index.html', context)
 
-    # If not authenticated
+    # Not authenticated
     else:
-        context = dict()
         context['user_posts'] = Post.objects \
             .filter(author__id=author.id) \
             .filter(visibility="PUBLIC").order_by('-published')
-        context['show_add_post_button'] = "false"
         return render(request, 'app/index.html', context)
 
 

@@ -6,7 +6,7 @@ from social.app.views import friend as friend_views
 
 posts_urlpatterns = [
     # /posts/
-    url(r'^$', post_views.view_posts, name='index'),
+    url(r'^$', post_views.get_posts, name='index'),
 
     # /posts/add/
     url(r'^add/$', post_views.post_create, name='posts-add'),
@@ -42,11 +42,11 @@ authors_urlpatterns = [
     # /authors/aeea8619-a9c1-4792-a273-80ccb7255ea2/
     url(r'^(?P<pk>[0-9a-z\\-]+)$', author_views.AuthorDetailView.as_view(), name='detail'),
     # /authors/aeea8619-a9c1-4792-a273-80ccb7255ea2/posts/
-    url(r'^(?P<pk>[0-9a-z\\-]+)/posts/$', author_views.view_posts_by_author, name='posts-by-author'),
+    url(r'^(?P<pk>[0-9a-z\\-]+)/posts/$', author_views.get_posts_by_author, name='posts-by-author'),
 ]
 
 urlpatterns = [
-    url(r'^$', post_views.indexHome, name='index'),
+    url(r'^$', post_views.get_home, name='index'),
     url(r'^posts/', include(posts_urlpatterns, namespace='posts')),
     url(r'^authors/', include(authors_urlpatterns, namespace='authors')),
     url(r'^friendrequests/$', friend_views.FriendRequestsListView.as_view(), name='friend-requests-list'),
