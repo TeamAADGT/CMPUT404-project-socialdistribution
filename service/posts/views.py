@@ -1,4 +1,5 @@
 from rest_framework import viewsets, views, generics
+from rest_framework.decorators import list_route
 from rest_framework.permissions import IsAuthenticated
 
 from service.authentication.node_basic import NodeBasicAuthentication
@@ -46,8 +47,12 @@ class AllPostsViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset
 
+    @list_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,))
+    def all_posts(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
-class AuthorPostsList(generics.ListAPIView):
+
+class AuthorPostsViewSet(generics.ListAPIView):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
@@ -67,3 +72,4 @@ class AuthorPostsList(generics.ListAPIView):
             queryset = queryset.exclude(is_image=True)
 
         return queryset
+

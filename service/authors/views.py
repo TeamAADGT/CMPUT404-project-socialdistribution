@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import detail_route, api_view, authentication_classes, permission_classes
+from rest_framework.decorators import detail_route, api_view, authentication_classes, permission_classes, list_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse

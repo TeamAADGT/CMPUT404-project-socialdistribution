@@ -21,6 +21,8 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from registration.backends.simple.views import RegistrationView
+from rest_framework.schemas import get_schema_view
+
 from social.app import urls as debug_urls
 from social.app.views import author as author_views
 from service import urls as rest_api_urls
@@ -28,7 +30,13 @@ from social.app.forms.user_profile import UserProfileForm
 from . import settings
 from rest_framework_swagger.views import get_swagger_view
 
-schema_view = get_swagger_view(title='Social Distribution API')
+api_kwargs = {
+    'title': 'Social Distribution API',
+    'urlconf': 'service.urls'
+}
+
+schema_view = get_schema_view(**api_kwargs)
+swagger_view = get_swagger_view(**api_kwargs)
 
 urlpatterns = [
     url(r'^service/', include(rest_api_urls.urlpatterns, namespace='service')),
@@ -50,7 +58,8 @@ urlpatterns = [
     url(r'^login/$', auth_views.login, name='login'),
     url(r'^logout/$', auth_views.logout, name='logout'),
     url(r'^debug/', include(debug_urls.urlpatterns, namespace='debug')),
-    url(r'^service/docs/$', schema_view)
+    url(r'^service/docs/$', swagger_view),
+    url(r'^service/schema/$', schema_view),
 ]
 
 admin.site.site_header = 'Social Distribution Administration'
