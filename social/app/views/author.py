@@ -45,7 +45,7 @@ def view_posts_by_author(request, pk):
         # case 2: posts.visibility=friends and friends                 --> can view
         context2['user_posts'] = Post.objects \
             .filter(author__id=author.id) \
-            .filter(author__id__in=current_author.friends.all()) \
+            .filter(author__id__in=current_author.author_friends.all()) \
             .filter(visibility="FRIENDS").order_by('-published')
 
         context["user_posts"] = context1["user_posts"] | context2["user_posts"]

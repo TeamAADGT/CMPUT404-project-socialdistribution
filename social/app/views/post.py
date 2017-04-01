@@ -61,14 +61,14 @@ def indexHome(request):
 
         # case 2: posts.visibility=friends and friends and friends on this server --> can view
         friend_posts = Post.objects \
-            .filter(author__id__in=author.friends.all()) \
+            .filter(author__id__in=author.author_friends.all()) \
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
         context3 = dict()
-        friends = set(f.id for f in author.friends.all())
+        friends = set(f.id for f in author.author_friends.all())
         print ("friends", friends)
         foafs = set()
 
@@ -76,7 +76,7 @@ def indexHome(request):
         for friend in friends:
             friend_obj = Author.objects.get(pk=friend)
             # print ("friend obj", friend_obj)
-            new_foafs = set(ff.id for ff in friend_obj.friends.all())
+            new_foafs = set(ff.id for ff in friend_obj.author_friends.all())
             # print ("new foafs", new_foafs)
             foafs.update(new_foafs)
 
@@ -138,13 +138,13 @@ def view_posts(request):
         # case 2: posts.visibility=friends and friends and friends on this server --> can view
         friend_posts = Post.objects \
             .filter(~Q(author__id=user.profile.id)) \
-            .filter(author__id__in=author.friends.all()) \
+            .filter(author__id__in=author.author_friends.all()) \
             .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
             .order_by('-published')
 
         # case 3: posts.visibility=foaf and friend/foaf                --> can view
         # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        friends = set(f.id for f in author.friends.all())
+        friends = set(f.id for f in author.author_friends.all())
         # print ("friends", friends)
         foafs = set()
 
@@ -152,7 +152,7 @@ def view_posts(request):
         for friend in friends:
             friend_obj = Author.objects.get(pk=friend)
             # print ("friend obj", friend_obj)
-            new_foafs = set(ff.id for ff in friend_obj.friends.all())
+            new_foafs = set(ff.id for ff in friend_obj.author_friends.all())
             # print ("new foafs", new_foafs)
             foafs.update(new_foafs)
 

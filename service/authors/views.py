@@ -16,9 +16,9 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
-    def friends(self, request, pk=None):
+    def author_friends(self, request, pk=None):
         try:
-            friends = self.get_object().friends.all()
+            friends = self.get_object().author_friends.all()
         except Author.DoesNotExist:
             return Response(
                 {'detail': 'Author not found.'},
@@ -114,7 +114,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
                 {'detail': 'The author you wanted to friend request could not be found.'},
                 status=status.HTTP_404_NOT_FOUND)
 
-        if current_author.friends.filter(id=target.id):
+        if current_author.author_friends.filter(id=target.id):
             return Response(
                 {"detail": "You are already friends with this author."},
                 status=status.HTTP_403_FORBIDDEN)
@@ -135,12 +135,8 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
             status=status.HTTP_200_OK)
 
-
-@api_view(http_method_names=["GET"])
-@authentication_classes((NodeBasicAuthentication,))
-@permission_classes((IsAuthenticated,))
-def two_authors_are_friends(request, local_id=None, other_host_name=None, other_id=None):
-    """
-    Returns true if these two authors are found, and 
-    """
-    return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+    def two_authors_are_friends(request, local_id=None, other_host_name=None, other_id=None):
+        """
+        Returns true if these two authors are found, and 
+        """
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

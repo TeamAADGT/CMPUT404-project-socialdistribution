@@ -47,7 +47,7 @@ class AuthorFriendRequestTestCase(APITestCase):
 
     def test_requesting_a_friend_fails(self):
         self.author.activated = True
-        self.author.friends.add(self.target)
+        self.author.author_friends.add(self.target)
         self.author.save()
 
         self.target.activated = True

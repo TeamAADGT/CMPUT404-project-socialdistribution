@@ -94,11 +94,11 @@ def init_friends(sender, **kwargs):
                     url=new_author_profile_json['url'],
                     node=node)
 
-                new_author_friends_json = new_author.new_author_profile.friends
+                new_author_friends_json = new_author.new_author_profile.author_friends
                 for new_author_friend_json in new_author_friends_json:
                     # id, host, displayName, and url are available
                     new_author_friend_node = Node.objects.get_or_create(host=new_author_friends_json['host'])
-                    new_author.friends.update_or_create(
+                    new_author.author_friends.update_or_create(
                         id=uri,
                         displayName=new_author_profile_json['displayName'],
                         url=new_author_profile_json['url'],
