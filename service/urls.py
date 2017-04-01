@@ -3,11 +3,9 @@ from rest_framework import routers
 
 import service.authors.views
 import service.friendrequest.views
-import service.users.views
 import service.posts.views
 
 router = routers.DefaultRouter()
-router.register(r'users', service.users.views.UserViewSet)
 router.register(r'author', service.authors.views.AuthorViewSet, base_name="author")
 
 # Wire up our API using automatic URL routing.
