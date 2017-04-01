@@ -1,9 +1,6 @@
-from rest_framework import models
 from rest_framework import serializers
 
-from service.nodes.serializers import SimpleNodeSerializer
 from social.app.models.author import Author
-from social.app.models.node import Node
 
 
 class AuthorURLSerializer(serializers.ModelSerializer):
