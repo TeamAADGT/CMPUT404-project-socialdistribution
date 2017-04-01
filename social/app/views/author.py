@@ -11,7 +11,7 @@ from django.db.models import Q
 from social.app.forms.user_profile import UserFormUpdate
 from social.app.models.author import Author
 from social.app.models.post import Post
-from social.app.views.post import get_remote_node_posts
+from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
 
 
 def get_posts_by_author(request, pk):
@@ -34,58 +34,34 @@ def get_posts_by_author(request, pk):
 
     # Current user views another author's posts
     elif current_user.is_authenticated():
-        # NOTE: this code is similar to code in social/app/views/post.py
-        # BUT this code *does not filter* on "following"
 
         # case I: posts.visibility=public
-        public_posts = dict()
-        public_posts["user_posts"] = Post.objects \
-            .filter(author__id=author.id) \
-            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
+        public_posts = get_all_public_posts()
+        public_posts = public_posts.filter(author__id=author.id)
 
         # case II: posts.visibility=friends
-        friend_posts = dict()
-        friend_posts["user_posts"] = Post.objects \
+        friend_posts = get_all_friend_posts(current_author)\
             .filter(author__id=author.id) \
-            .filter(author__id__in=current_author.friends.all()) \
-            .filter(~Q(author__id=current_user.profile.id)) \
-            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
+            .filter(~Q(author__id=current_user.profile.id))
 
         # case III: posts.visibility=foaf
-        friends_list = set(f.id for f in current_author.friends.all())
-        foafs = set()
-
-        for friend in friends_list:
-            friend_obj = Author.objects.get(pk=friend)
-            new_foafs = set(ff.id for ff in friend_obj.friends.all())
-            foafs.update(new_foafs)
-        foafs.update(friends_list)
-
-        foaf_posts = dict()
-        foaf_posts["user_posts"] = Post.objects \
-            .filter(author__id=author.id) \
-            .filter(Q(author__id__in=foafs)) \
-            .filter(~Q(author__id=current_user.profile.id)) \
-            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
+        foaf_posts = get_all_foaf_posts(current_author)\
+            .filter(~Q(author__id=current_user.profile.id))\
+            .filter(author__id=author.id)
 
         # TODO: case IV: posts.visibility=private
 
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
-        node_posts = dict()
         try:
-            node_posts["user_posts"] = get_remote_node_posts()
-            if node_posts["user_posts"] == []:
-                node_posts["user_posts"] = Post.objects.none()
-        except Exception: # Avoid a possible ConnectionError
-            node_posts["user_posts"] = Post.objects.none()
+            node_posts = get_remote_node_posts()
+        except Exception:  # Avoid a possible ConnectionError
+            node_posts = Post.objects.none()  # empty Queryset
 
-        context["user_posts"] = public_posts["user_posts"] | \
-            friend_posts["user_posts"] | \
-            foaf_posts["user_posts"] | \
-            node_posts["user_posts"]
+        context["user_posts"] = public_posts | \
+            friend_posts | \
+            foaf_posts| \
+            node_posts
 
         return render(request, 'app/index.html', context)
 
