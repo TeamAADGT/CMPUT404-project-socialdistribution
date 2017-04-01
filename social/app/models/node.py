@@ -38,7 +38,9 @@ class Node(models.Model):
 
     def get_author_posts(self):
         url = self.service_url + "author/posts"
+
         return requests.get(url, auth=(self.username, self.password)).json()
+
 
     def get_public_posts(self):
         url = self.service_url + "posts"

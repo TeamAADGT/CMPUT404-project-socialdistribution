@@ -20,17 +20,15 @@ def get_home(request):
     """
     Get /
     """
-    if request.user.is_authenticated(): # Redirects user to /posts/
-        user = request.user
-        author = Author.objects.get(user=request.user.id)
-        context = dict()
-        success_url = reverse('app:posts:index')
-        return HttpResponseRedirect(success_url)
+    remote_posts = get_remote_node_posts()
 
-    else: # Shows all public posts
-        context = dict()
-        context['all_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
-        return render(request, 'app/landing.html', context)
+    local_posts = dict()
+    local_posts['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
+
+    context = dict()
+    context["user_posts"] = remote_posts | local_posts['user_posts']
+
+    return render(request, 'app/index.html', context)
 
 
 def get_posts(request):
@@ -79,8 +77,10 @@ def get_posts(request):
 
     # Not authenticated
     else:
-        context['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
-        return render(request, 'app/index.html', context)
+        success_url = reverse('app:posts:index')
+        return HttpResponseRedirect(success_url)
+        #context['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
+        #return render(request, 'app/index.html', context)
 
 
 class DetailView(generic.DetailView):
