@@ -9,7 +9,7 @@ from social.app.models.node import Node
 
 
 class Author(models.Model):
-    user = models.OneToOneField(User, related_name='user')
+    user = models.OneToOneField(User, related_name='user', blank=True, null=True)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -86,7 +86,7 @@ class Author(models.Model):
             raise Exception("Attempted to accept a friend request that does not exist.")
 
     def __str__(self):
-        return '%s, %s (%s)' % (self.user.last_name, self.user.first_name, self.displayName)
+        return '%s' % self.displayName
 
     @classmethod
     def get_id_from_uri(cls, uri):
