@@ -1,7 +1,8 @@
 import re
-import uuid
+import uuid, logging
 
 import CommonMark
+from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.db.models import Q
@@ -160,35 +161,30 @@ def get_all_foaf_posts(author):
     return foaf_posts["user_posts"]
 
 
+# This gets all public posts from remote nodes
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
         try:
-            node.get_author_posts(['posts'])
-            for post_json in node.get_author_posts(['posts']):
+            node.get_public_posts()['posts']
+            for post_json in node.get_public_posts()['posts']:
                 author_json = post_json['author']
-                author = Author(
-                    id=Author.get_id_from_uri(author_json['id']),
+                remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                Author(
+                    id=remote_author_id,
                     node=node,
                     displayName=author_json['displayName'],
-                )
+                ).save()
+
                 post = Post(
-                    id=post_json['id'],
+                    id=uuid.UUID(post_json['id']),
                     title=post_json['title'],
                     source=post_json['source'],
                     origin=post_json['origin'],
                     description=post_json['description'],
-                    author=author,
+                    author= Author.objects.get(pk=remote_author_id),
                     published=post_json['published'],
-                )
+                ).save()
                 node_posts.append(post)
-
         except Exception:
-            print ("Node", node.host, "may have malformed author/post/ response." )
-
-
-
-    if node_posts == []:
-        node_posts = Post.objects.none()
-
-    return node_posts
+            logging.error("Node", node.host, "may have malformed author/post/ response.")

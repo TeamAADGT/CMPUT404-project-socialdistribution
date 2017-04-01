@@ -21,13 +21,8 @@ def get_home(request):
     Get /
     """
     remote_posts = get_remote_node_posts()
-
-    local_posts = dict()
-    local_posts['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
-
     context = dict()
-    context["user_posts"] = remote_posts | local_posts['user_posts']
-
+    context["user_posts"] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
     return render(request, 'app/index.html', context)
 
 
@@ -39,8 +34,13 @@ def get_posts(request):
 
     # User views "My Feed"
     if request.user.is_authenticated():
+
         user = request.user
         author = Author.objects.get(user=request.user.id)
+
+        # Case V: Get other node posts
+        # TODO: need to filter these based on remote author's relationship to current user.
+        node_posts = get_remote_node_posts()
 
         # case I: posts.visibility=public and following
         public_and_following_posts = get_all_public_posts()\
@@ -61,17 +61,9 @@ def get_posts(request):
 
         # TODO: case IV: posts.visibility=private
 
-        # Case V: Get other node posts
-        # TODO: need to filter these based on remote author's relationship to current user.
-        try:
-            node_posts = get_remote_node_posts()
-        except Exception: # Avoid a possible ConnectionError
-            node_posts = Post.objects.none() # empty Queryset
-
         context["user_posts"] = public_and_following_posts | \
-            friend_posts | \
-            foaf_posts | \
-            node_posts
+                                friend_posts | \
+                                foaf_posts
 
         return render(request, 'app/index.html', context)
 
