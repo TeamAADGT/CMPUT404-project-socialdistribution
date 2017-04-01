@@ -2,8 +2,10 @@ import base64
 from itertools import chain
 from operator import attrgetter
 
+import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db.models import Q, F
 from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
@@ -21,23 +23,40 @@ from social.app.models.post import Post
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
-        for post_json in node.get_author_posts()['posts']:
-            author_json = post_json['author']
-            author = Author(
-                id=Author.get_id_from_uri(author_json['id']),
-                node=node,
-                displayName=author_json['displayName'],
-            )
-            post = Post(
-                id=post_json['id'],
-                title=post_json['title'],
-                source=post_json['source'],
-                origin=post_json['origin'],
-                description=post_json['description'],
-                author=author,
-                published=post_json['published'],
-            )
-            node_posts.append(post)
+
+        posts_json_raw = node.get_author_posts()
+        if len(posts_json_raw) == 0:
+            continue
+
+        posts_json = posts_json_raw['posts']
+
+        for post_json in posts_json:
+            try:
+                author_json = post_json['author']
+                author, created = Author.objects.update_or_create(
+                    id=Author.get_id_from_uri(author_json['id']),
+                    defaults={
+                        'node': node,
+                        'displayName': author_json['displayName'],
+                    }
+                )
+                post, created = Post.objects.update_or_create(
+                    id=post_json['id'],
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                    }
+                )
+                node_posts.append(post)
+            except Exception, e:
+                logging.error(e)
+                logging.warn('Skipping a post retrieved from ' + node.host)
+                continue
+
     return node_posts
 
 
@@ -174,7 +193,8 @@ def view_posts(request):
         # Avoid a possible ConnectionError
         try:
             node_posts = get_remote_node_posts()
-        except Exception:
+        except Exception, e:
+            logging.error(e)
             node_posts = list()
 
         all_posts = list(

@@ -4,7 +4,7 @@ import re
 import requests
 from django.db import models
 from django.db.models.signals import post_save
-
+import logging
 
 class Node(models.Model):
     """
@@ -37,8 +37,15 @@ class Node(models.Model):
         return requests.get(url, auth=(self.username, self.password)).json()
 
     def get_author_posts(self):
-        url = self.service_url + "author/posts"
-        return requests.get(url, auth=(self.username, self.password)).json()
+        url = self.service_url + "author/posts/"
+        response = requests.get(url, auth=(self.username, self.password)).json()
+        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
+            return response
+        else:
+            logging.warn(
+                "%s did not conform to the expected response format! Returning an empty list of posts!"
+                % url)
+            return []
 
     def get_public_posts(self):
         url = self.service_url + "posts"
