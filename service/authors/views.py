@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -10,7 +10,7 @@ from service.authors.serializers import AuthorSerializer, AuthorURLSerializer
 from social.app.models.author import Author
 
 
-class AuthorViewSet(viewsets.ModelViewSet):
+class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     permission_classes = (IsAuthenticated,)
@@ -134,3 +134,13 @@ class AuthorViewSet(viewsets.ModelViewSet):
         return Response(
             {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
             status=status.HTTP_200_OK)
+
+
+@api_view(http_method_names=["GET"])
+@authentication_classes((NodeBasicAuthentication,))
+@permission_classes((IsAuthenticated,))
+def two_authors_are_friends(request, local_id=None, other_host_name=None, other_id=None):
+    """
+    Returns true if these two authors are found, and 
+    """
+    return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
