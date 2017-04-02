@@ -5,7 +5,7 @@ import logging
 import requests
 from django.db import models
 from django.db.models.signals import post_save
-
+import logging
 
 class Node(models.Model):
     """
@@ -51,6 +51,8 @@ class Node(models.Model):
     def get_public_posts(self):
         url = self.service_url + "posts/"
         response = requests.get(url, auth=(self.username, self.password)).json()
+        # Note: uncomment out following line to test with current "Coolbears" node if you want to test remote post results
+        # return response
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
             return response
         else:

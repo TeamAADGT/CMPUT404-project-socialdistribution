@@ -59,8 +59,8 @@ def my_stream_posts(request):
         # case III: posts.visibility=foaf
         # TODO: Should you have to explicitly follow a foaf to see their posts in your feed?
         # This code assumes the answer to that question is yes.
-        foaf_posts = get_all_foaf_posts(author)\
-            .filter(~Q(author__id=user.profile.id))\
+        foaf_posts = get_all_foaf_posts(author) \
+            .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all())
 
         # TODO: case IV: posts.visibility=private
@@ -75,8 +75,6 @@ def my_stream_posts(request):
     else:
         success_url = reverse('app:posts:index')
         return HttpResponseRedirect(success_url)
-        #context['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
-        #return render(request, 'app/index.html', context)
 
 
 class DetailView(generic.DetailView):
