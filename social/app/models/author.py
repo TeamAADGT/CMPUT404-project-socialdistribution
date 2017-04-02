@@ -9,13 +9,13 @@ from social.app.models.node import Node
 
 
 class Author(models.Model):
-    user = models.OneToOneField(User, related_name='user', blank=True, null=True) # optional
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     displayName = models.CharField(max_length=512)
 
     ### Optional Attributes
+
+    user = models.OneToOneField(User, related_name='user', blank=True, null=True)
 
     # https://github.com/join
     github = models.URLField(default='', blank=True)
@@ -87,7 +87,7 @@ class Author(models.Model):
             raise Exception("Attempted to accept a friend request that does not exist.")
 
     def __str__(self):
-        return '%s, %s (%s)' % (self.displayName)
+        return '%s' % self.displayName
 
     @classmethod
     def get_id_from_uri(cls, uri):

@@ -5,8 +5,8 @@ from social.app.views import author as author_views
 from social.app.views import friend as friend_views
 
 posts_urlpatterns = [
-    # /posts/          soon to be all public posts
-    url(r'^$', post_views.get_home, name='index'),
+    # /posts/
+    url(r'^$', post_views.all_posts, name='index'),
 
     # /posts/add/
     url(r'^add/$', post_views.post_create, name='posts-add'),
@@ -46,9 +46,8 @@ authors_urlpatterns = [
 ]
 
 urlpatterns = [
-    # / (this is My Stream! if you are logged in, otherwise it's public posts)
-    url(r'^$', post_views.get_posts, name='index'),
-
+    # /
+    url(r'^$', post_views.my_stream_posts, name='index'),
     url(r'^posts/', include(posts_urlpatterns, namespace='posts')),
     url(r'^authors/', include(authors_urlpatterns, namespace='authors')),
     url(r'^friendrequests/$', friend_views.FriendRequestsListView.as_view(), name='friend-requests-list'),

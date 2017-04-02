@@ -1,4 +1,5 @@
 import base64
+import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -16,9 +17,9 @@ from social.app.models.post import Post
 from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
 
 
-def get_home(request):
+def all_posts(request):
     """
-    Get /
+    Get /posts/
     """
     remote_posts = get_remote_node_posts()
     context = dict()
@@ -26,9 +27,9 @@ def get_home(request):
     return render(request, 'app/index.html', context)
 
 
-def get_posts(request):
+def my_stream_posts(request):
     """
-    Get /posts/
+    Get /
     """
     context = dict()
 
@@ -40,7 +41,10 @@ def get_posts(request):
 
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
-        node_posts = get_remote_node_posts()
+        try:
+            get_remote_node_posts()
+        except Exception, e:
+            logging.error(e)
 
         # case I: posts.visibility=public and following
         public_and_following_posts = get_all_public_posts()\

@@ -161,12 +161,14 @@ def get_all_foaf_posts(author):
     return foaf_posts["user_posts"]
 
 
-# This gets all public posts from remote nodes
+# This gets all remote posts from:
+# /service/posts
+# TODO: need to query remote author to grab their friends?
+# TODO: need to save post comments too?
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
         try:
-            node.get_public_posts()['posts']
             for post_json in node.get_public_posts()['posts']:
                 author_json = post_json['author']
                 remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
@@ -184,7 +186,11 @@ def get_remote_node_posts():
                     description=post_json['description'],
                     author= Author.objects.get(pk=remote_author_id),
                     published=post_json['published'],
+                    content=post_json['content'],
+                    visibility=post_json['visibility']
                 ).save()
                 node_posts.append(post)
-        except Exception:
-            logging.error("Node", node.host, "may have malformed author/post/ response.")
+        except Exception, e:
+            logging.error(e)
+            logging.warn('Skipping a post retrieved from ' + node.host)
+            continue
