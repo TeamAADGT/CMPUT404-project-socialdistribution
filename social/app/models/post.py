@@ -1,12 +1,15 @@
 import re
-import uuid
+import uuid, logging
 
 import CommonMark
+from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
+from django.db.models import Q
 
 from social.app.models.author import Author
 from social.app.models.category import Category
+from social.app.models.node import Node
 
 
 class Post(models.Model):
@@ -79,6 +82,7 @@ class Post(models.Model):
 
     unlisted = models.BooleanField(default=False)
 
+
     def get_absolute_url(self):
         return reverse('app:posts:detail', kwargs={'pk': self.id})
 
@@ -120,3 +124,69 @@ def keys(tuple_list):
     Accepts a tuple list, returns a list of each tuple's first values
     """
     return [x[0] for x in tuple_list]
+
+
+def get_all_public_posts():
+    return Post.objects \
+        .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+        .order_by('-published')
+
+
+def get_all_friend_posts(user):
+    return Post.objects \
+        .filter(author__id__in=user.friends.all()) \
+        .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
+        .order_by('-published')
+
+
+def get_all_foaf_posts(author):
+    friends_list = set(f.id for f in author.friends.all())
+    foafs = set()
+
+    for friend in friends_list:
+        friend_obj = Author.objects.get(pk=friend)
+        new_foafs = set(ff.id for ff in friend_obj.friends.all())
+        foafs.update(new_foafs)
+    foafs.update(friends_list)
+
+    return Post.objects \
+        .filter(Q(author__id__in=foafs)) \
+        .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
+
+
+# This gets all remote posts from:
+# /service/posts
+# TODO: need to query remote author to grab their friends?
+# TODO: need to save post comments too?
+def get_remote_node_posts():
+    node_posts = list()
+    for node in Node.objects.filter(local=False):
+        try:
+            for post_json in node.get_public_posts()['posts']:
+                author_json = post_json['author']
+                remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                author, created = Author.objects.update_or_create(
+                    id=remote_author_id,
+                    defaults={
+                        'node': node,
+                        'displayName': author_json['displayName'],
+                    }
+                )
+                post, created = Post.objects.update_or_create(
+                    id=uuid.UUID(post_json['id']),
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
+                node_posts.append(post)
+        except Exception, e:
+            logging.error(e)
+            logging.warn('Skipping a post retrieved from ' + node.host)
+            continue

@@ -1,3 +1,5 @@
+from operator import attrgetter
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -10,55 +12,63 @@ from django.db.models import Q
 
 from social.app.forms.user_profile import UserFormUpdate
 from social.app.models.author import Author
+from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
 from social.app.models.post import Post
 
-
-def view_posts_by_author(request, pk):
+def get_posts_by_author(request, pk):
+    """
+    Get /authors/<author_guid>/posts/
+    """
     current_user = request.user
     author = Author.objects.get(id=pk)
     author_guid = str(pk)
     current_author = Author.objects.get(user=request.user.id)
     current_author_guid = str(current_author.id)
+    context = dict()
+    context['show_add_post_button'] = "false"
 
-    # If current user is authenticated and the guid in the url is the same as the current user's guid
-    # then show them their own posts
+    # Current user views their own posts
     if current_user.is_authenticated() and current_author_guid == author_guid:
-        context = dict()
-        # Return all posts by current user
         context['user_posts'] = Post.objects.filter(author__id=current_user.profile.id).order_by('-published')
         context['show_add_post_button'] = "true"
         return render(request, 'app/index.html', context)
 
-    # If the current user is authenticated only show them the posts that are visible to them
+    # Current user views another author's posts
     elif current_user.is_authenticated():
-        context = dict()
-        context1 = dict()
-        context2 = dict()
 
-        # case 1:  posts.visibility=public and following               --> can view
-        # case 1': posts.visibility=public  and not following          --> can view
-        # case 2': posts.visibility=friends and not friends            --> can't view
-        context1['user_posts'] = Post.objects \
+        # Case V: Get other node posts
+        # TODO: need to filter these based on remote author's relationship to current user.
+        node_posts = get_remote_node_posts()
+
+        # case I: posts.visibility=public
+        public_posts = get_all_public_posts()
+        public_posts = public_posts.filter(author__id=author.id)
+
+        # case II: posts.visibility=friends
+        friend_posts = get_all_friend_posts(current_author)\
             .filter(author__id=author.id) \
-            .filter(visibility="PUBLIC").order_by('-published')
+            .filter(~Q(author__id=current_user.profile.id))
 
-        # case 2: posts.visibility=friends and friends                 --> can view
-        context2['user_posts'] = Post.objects \
-            .filter(author__id=author.id) \
-            .filter(author__id__in=current_author.friends.all()) \
-            .filter(visibility="FRIENDS").order_by('-published')
+        # case III: posts.visibility=foaf
+        foaf_posts = get_all_foaf_posts(current_author)\
+            .filter(~Q(author__id=current_user.profile.id))\
+            .filter(author__id=author.id)
 
-        context["user_posts"] = context1["user_posts"] | context2["user_posts"]
-        context['show_add_post_button'] = "false"
+        # TODO: case IV: posts.visibility=private
+
+        posts = public_posts | \
+            friend_posts | \
+            foaf_posts
+
+        context["user_posts"] = sorted(posts, key=attrgetter('published'))
+
         return render(request, 'app/index.html', context)
 
-    # If not authenticated
+    # Not authenticated
     else:
-        context = dict()
         context['user_posts'] = Post.objects \
             .filter(author__id=author.id) \
             .filter(visibility="PUBLIC").order_by('-published')
-        context['show_add_post_button'] = "false"
         return render(request, 'app/index.html', context)
 
 
