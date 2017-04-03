@@ -1,3 +1,5 @@
+from operator import attrgetter
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -54,9 +56,11 @@ def get_posts_by_author(request, pk):
 
         # TODO: case IV: posts.visibility=private
 
-        context["user_posts"] = public_posts | \
+        posts = public_posts | \
             friend_posts | \
             foaf_posts
+
+        context["user_posts"] = sorted(posts, key=attrgetter('published'))
 
         return render(request, 'app/index.html', context)
 

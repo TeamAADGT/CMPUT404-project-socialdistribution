@@ -1,5 +1,6 @@
 import base64
 import logging
+from operator import attrgetter
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -65,9 +66,11 @@ def my_stream_posts(request):
 
         # TODO: case IV: posts.visibility=private
 
-        context["user_posts"] = public_and_following_posts | \
-                                friend_posts | \
-                                foaf_posts
+        posts = public_and_following_posts | \
+            friend_posts | \
+            foaf_posts
+
+        context["user_posts"] = sorted(posts, key=attrgetter('published'))
 
         return render(request, 'app/index.html', context)
 

@@ -61,6 +61,7 @@ class Node(models.Model):
                 % url)
             return []
 
+
     def create_or_update_remote_author(self, uuid):
         json = self.get_author(uuid).json()
         from social.app.models.author import Author

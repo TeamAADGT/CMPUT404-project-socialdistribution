@@ -127,20 +127,16 @@ def keys(tuple_list):
 
 
 def get_all_public_posts():
-    public_posts = dict()
-    public_posts["user_posts"] = Post.objects \
+    return Post.objects \
         .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
         .order_by('-published')
-    return public_posts["user_posts"]
 
 
 def get_all_friend_posts(user):
-    friend_posts = dict()
-    friend_posts["user_posts"] = Post.objects \
+    return Post.objects \
         .filter(author__id__in=user.friends.all()) \
         .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
         .order_by('-published')
-    return friend_posts["user_posts"]
 
 
 def get_all_foaf_posts(author):
@@ -153,12 +149,9 @@ def get_all_foaf_posts(author):
         foafs.update(new_foafs)
     foafs.update(friends_list)
 
-    foaf_posts = dict()
-    foaf_posts["user_posts"] = Post.objects \
+    return Post.objects \
         .filter(Q(author__id__in=foafs)) \
         .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
-
-    return foaf_posts["user_posts"]
 
 
 # This gets all remote posts from:
@@ -172,23 +165,26 @@ def get_remote_node_posts():
             for post_json in node.get_public_posts()['posts']:
                 author_json = post_json['author']
                 remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
-                Author(
+                author, created = Author.objects.update_or_create(
                     id=remote_author_id,
-                    node=node,
-                    displayName=author_json['displayName'],
-                ).save()
-
-                post = Post(
+                    defaults={
+                        'node': node,
+                        'displayName': author_json['displayName'],
+                    }
+                )
+                post, created = Post.objects.update_or_create(
                     id=uuid.UUID(post_json['id']),
-                    title=post_json['title'],
-                    source=post_json['source'],
-                    origin=post_json['origin'],
-                    description=post_json['description'],
-                    author= Author.objects.get(pk=remote_author_id),
-                    published=post_json['published'],
-                    content=post_json['content'],
-                    visibility=post_json['visibility']
-                ).save()
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
                 node_posts.append(post)
         except Exception, e:
             logging.error(e)
