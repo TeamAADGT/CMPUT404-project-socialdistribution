@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('bio', models.TextField(blank=True, default=b'')),
                 ('activated', models.BooleanField(default=False)),
                 ('followed_authors', models.ManyToManyField(blank=True, related_name='_author_followed_authors_+', to='app.Author')),
-                ('friends', models.ManyToManyField(blank=True, related_name='_author_friends_+', to='app.Author')),
+                ('friends', models.ManyToManyField(blank=True, related_name='_friends_+', to='app.Author')),
             ],
         ),
         migrations.CreateModel(

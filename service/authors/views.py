@@ -18,7 +18,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends(self, request, pk=None):
         try:
-            friends = self.get_object().author_friends.all()
+            friends = self.get_object().friends.all()
         except Author.DoesNotExist:
             return Response(
                 {'detail': 'Author not found.'},
@@ -114,7 +114,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
                 {'detail': 'The author you wanted to friend request could not be found.'},
                 status=status.HTTP_404_NOT_FOUND)
 
-        if current_author.author_friends.filter(id=target.id):
+        if current_author.friends.filter(id=target.id):
             return Response(
                 {"detail": "You are already friends with this author."},
                 status=status.HTTP_403_FORBIDDEN)

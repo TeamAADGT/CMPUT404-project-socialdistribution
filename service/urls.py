@@ -8,6 +8,8 @@ import service.posts.views
 # router = routers.DefaultRouter()
 # router.register(r'author', service.authors.views.AuthorViewSet, base_name="author")
 
+# Viewset methods are mapped to URLs manually to get around issue where the API schema wouldn't show all available
+# endpoints, causing problems in Swagger
 author_urls = [
     url(r'^posts/$', service.posts.views.AllPostsViewSet.as_view({'get': 'all-posts'}), name='all-posts-list'),
     url(r'^(?P<pk>[0-9a-fA-F-]+)/posts/$',
@@ -19,6 +21,18 @@ author_urls = [
     url(r'^(?P<local_id>[0-9a-z\\-]+)/friends/(?P<other_host_name>[^/]+)/author/(?P<other_id>[0-9a-z\\-]+)/$',
         service.authors.views.AuthorViewSet.as_view({'get': 'two_authors_are_friends'}),
         name='two-author-friends-with-other'),
+    url(r'^(?P<pk>[0-9a-z\\-]+)/follow/$',
+        service.authors.views.AuthorViewSet.as_view({'post': 'follow'}),
+        name='author-follow'),
+    url(r'^(?P<pk>[0-9a-z\\-]+)/unfollow/$',
+        service.authors.views.AuthorViewSet.as_view({'post': 'unfollow'}),
+        name='author-unfollow'),
+    url(r'^(?P<pk>[0-9a-z\\-]+)/friendrequest/$',
+        service.authors.views.AuthorViewSet.as_view({'post': 'friendrequest'}),
+        name='author-friendrequest'),
+    url(r'^(?P<pk>[0-9a-z\\-]+)/$',
+        service.authors.views.AuthorViewSet.as_view({'get': 'detail'}),
+        name='author-detail'),
 ]
 
 # Wire up our API using automatic URL routing.
