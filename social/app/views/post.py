@@ -1,4 +1,5 @@
 import base64
+import feedparser
 from itertools import chain
 from operator import attrgetter
 
@@ -311,6 +312,62 @@ def post_update(request, pk):
     }
     return render(request, "posts/post_form.html", context)
 
+# Get the GitHub activity of a user
+@login_required
+def get_github_activity(request):
+    if not request.user.is_authenticated():
+        raise Http404
+
+    # How to pass argument to reverse
+    # By igor(https://stackoverflow.com/users/978434/igor)
+    # On StackOverflow url: https://stackoverflow.com/questions/15703475/how-to-make-reverse-lazy-lazy-for-arguments-too
+    # License: CC-BY-SA 3.0
+    return_url = reverse('app:authors:posts-by-author', kwargs = {'pk' : request.user.profile.id, })
+
+    author = Author.objects.get(user=request.user.id)
+    gitUrl = author.github
+
+    # lazy way of checking if URL is correct right now
+    if((gitUrl[:20] != "https://github.com/") or (len(gitUrl.split("/")) != 4)):
+        return HttpResponseRedirect(return_url)
+    
+    data = feedparser.parse(gitUrl + ".atom")
+
+    # get users post
+    posts = Post.objects.filter(author__id=author.id).filter(title__contains="New GitHub Activity:")
+
+    # Get encoding to decode the data
+    encoding = data["encoding"]
+    # Go over all the entries for the RSS feed, turn them into posts, save
+    # them - this seems to work out okay imo
+    for x in data.get("entries"):
+        found = False
+        gitId = %x["id"].encode(encoding).split("/")
+
+        # this is done to avoid adding duplicates
+        # need to test this
+        for entry in posts:
+            entry.title.split()
+            if(entry[3] == gitId[1]):
+                found = True
+                break
+        
+        if(found is False):
+            post = Post.objects.create() #author_id="b5357e6874424df1af124fbb40d6621f"
+
+            # want to stash activity ID somewhere to avoid duplication in later gets
+            # it's in the title right now, just need to actually get it
+            post.title = "New GitHub Activity: %s" %gitId[1]
+            # uses given title to describe what the user did
+            post.description = x["title"].encode(encoding)
+            post.content_type = "text/markdown"
+            # gives a link to the page
+            post.content = "See [this page](%s)" %(x["link"].encode(encoding))
+            # use their given published date so that way it's properly sorted
+            post.published = x["published"].encode(encoding)
+            post.save()
+
+    return HttpResponseRedirect(return_url)
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
