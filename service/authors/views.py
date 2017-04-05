@@ -11,12 +11,35 @@ from social.app.models.author import Author
 
 
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows for the retrieval and modification of Authors.
+    """
+
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     permission_classes = (IsAuthenticated,)
 
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends(self, request, pk=None):
+        """
+        Returns a (possibly empty) list of  Authors that are friends with the user specified by id.
+        
+        Example successful response:
+        
+            {
+                "query":"friends",
+                "authors":[
+                    "http://host3/author/de305d54-75b4-431b-adb2-eb6b9e546013",
+                    "http://host2/author/ae345d54-75b4-431b-adb2-fb6b9e547891"
+                ]
+            }
+        
+        Example failed response:
+        
+            {
+                "detail": "Author not found."
+            }
+        """
         try:
             friends = self.get_object().friends.all()
         except Author.DoesNotExist:
