@@ -1,14 +1,14 @@
 import feedparser
 from background_task import background
-from social.app.models.author import Author
+import social.app.models.author
 from social.app.models.post import Post
 
 # Get the GitHub activity of a user
 # Source: https://pypi.python.org/pypi/django-background-tasks
 @background(schedule=60)
-def get_github_activity(authorId, gitUrl):
-    print("Entered!")
+def get_github_activity(authorId):
     gitAuthor = Author.objects.get(id=authorId)
+    gitUrl = gitAuthor.github
 
     # lazy way of checking if URL is correct right now
     if((gitUrl[:19] == "https://github.com/") and (len(gitUrl.split("/")) == 4)):

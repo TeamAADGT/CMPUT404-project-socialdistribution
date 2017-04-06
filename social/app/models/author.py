@@ -102,6 +102,7 @@ def create_profile(sender, **kwargs):
         user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
+        get_github_activity(str(user.id))
 
 
 post_save.connect(create_profile, sender=User)
