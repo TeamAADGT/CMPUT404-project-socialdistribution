@@ -86,7 +86,8 @@ class Post(models.Model):
         to='Post',
         null=True,
         blank=True,
-        related_name='parent_post'
+        related_name='parent_post',
+        on_delete=models.SET_NULL
     )
 
     def get_absolute_url(self):

@@ -48,12 +48,12 @@ def my_stream_posts(request):
             logging.error(e)
 
         # case I: posts.visibility=public and following
-        public_and_following_posts = get_all_public_posts()\
-            .filter(~Q(author__id=user.profile.id))\
+        public_and_following_posts = get_all_public_posts() \
+            .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all())
 
         # case II: posts.visibility=friends
-        friend_posts = get_all_friend_posts(author)\
+        friend_posts = get_all_friend_posts(author) \
             .filter(author__id__in=author.followed_authors.all()) \
             .filter(~Q(author__id=user.profile.id))
 
@@ -67,8 +67,8 @@ def my_stream_posts(request):
         # TODO: case IV: posts.visibility=private
 
         posts = public_and_following_posts | \
-            friend_posts | \
-            foaf_posts
+                friend_posts | \
+                foaf_posts
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'))
 
@@ -86,27 +86,6 @@ class DetailView(generic.DetailView):
     """
     model = Post
     template_name = 'posts/detail.html'
-
-
-def get_upload_file(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-
-    if not post.is_upload():
-        # doesn't make sense to do this
-        return HttpResponseForbidden()
-
-    if post.is_image():
-        content = base64.b64decode(post.content)
-        content_type = post.content_type.split(';')[0]
-    else:
-        # is application/base64, so don't decode
-        content = post.content
-        content_type = post.content_type
-
-    return HttpResponse(
-        content=content,
-        content_type=content_type,
-    )
 
 
 def view_post_comments(request, pk):
@@ -149,7 +128,7 @@ def post_delete(request, pk):
     # By igor(https://stackoverflow.com/users/978434/igor)
     # On StackOverflow url: https://stackoverflow.com/questions/15703475/how-to-make-reverse-lazy-lazy-for-arguments-too
     # License: CC-BY-SA 3.0
-    success_url = reverse('app:authors:posts-by-author', kwargs = {'pk' : request.user.profile.id, })
+    success_url = reverse('app:authors:posts-by-author', kwargs={'pk': request.user.profile.id, })
     # Upon success redirects user to /authors/<current_user_guid>/posts/
     return HttpResponseRedirect(success_url)
 
@@ -165,7 +144,9 @@ def post_update(request, pk):
     if post.author != request.user.profile:
         return HttpResponse(status=401)
 
-    form = PostForm(request.POST or None, request.FILES or None, instance=post)
+    form = PostForm(request.POST or None, request.FILES or None,
+                    instance=post,
+                    initial={'upload_content_type': post.child_post.content_type if post.child_post else ""})
 
     if form.is_valid():
         instance = form.save(request=request)

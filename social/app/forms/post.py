@@ -17,7 +17,7 @@ class PostForm(forms.ModelForm):
 
     upload_content_type = forms.ChoiceField(
         choices=[("", "")] + Post.IMAGE_CONTENT_TYPES,
-        required=False
+        required=False,
     )
 
     upload_content = forms.FileField(
@@ -41,6 +41,9 @@ class PostForm(forms.ModelForm):
 
         self.save_categories(instance, commit)
 
+        delete_child = False
+
+        upload_content_type = self.cleaned_data["upload_content_type"]
         if 'upload_content' in self.files:
             file_content = self.files['upload_content']
             if instance.child_post is None:
@@ -53,18 +56,23 @@ class PostForm(forms.ModelForm):
                     unlisted=instance.unlisted,
                     visibility=instance.visibility,
                     visible_to=instance.visible_to.all(),
-                    categories=instance.categories.all()
+                    categories=instance.categories.all(),
                 )
 
-                instance.child_post.content_type = self.cleaned_data["upload_content_type"]
-                instance.child_post.content = base64.b64encode(file_content.read())
+            instance.child_post.content_type = upload_content_type
+            instance.child_post.content = base64.b64encode(file_content.read())
+        elif instance.child_post is not None and not upload_content_type:
+            delete_child = True
 
         if commit:
             instance.save()
             self.save_m2m()
 
             if instance.child_post:
-                instance.child_post.save()
+                if delete_child:
+                    instance.child_post.delete()
+                else:
+                    instance.child_post.save()
 
         return instance
 
@@ -87,9 +95,21 @@ class PostForm(forms.ModelForm):
         upload_content = cleaned_data["upload_content"]
         upload_content_type = cleaned_data["upload_content_type"]
 
+        is_insert = not Post.objects.filter(id=self.instance.id).exists()
+
         # upload_content and type must either both be set or both not be set
-        if (upload_content and not upload_content_type) or (not upload_content and upload_content_type):
-            raise forms.ValidationError("Upload content type can only be set if a file is uploaded, and vice-versa.")
+        if is_insert:
+            if (upload_content and not upload_content_type) or (not upload_content and upload_content_type):
+                raise forms.ValidationError(
+                    "Upload content type can only be set if an image is uploaded, and vice-versa.")
+        else:
+            if upload_content:
+                if not upload_content_type:
+                    raise forms.ValidationError("Uploading a new image requires an upload content type.")
+            elif (self.instance.child_post
+                  and upload_content_type  # Not setting the upload content type deletes an existing image
+                  and upload_content_type != self.instance.child_post.content_type):
+                raise forms.ValidationError("Can't change the content type of an existing image.")
 
     class Meta:
         model = Post
