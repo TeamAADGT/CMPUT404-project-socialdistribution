@@ -324,11 +324,11 @@ def get_github_activity(request):
     # License: CC-BY-SA 3.0
     return_url = reverse('app:authors:posts-by-author', kwargs = {'pk' : request.user.profile.id, })
 
-    author = Author.objects.get(user=request.user.id)
+    gitAuthor = Author.objects.get(user=request.user.id)
     gitUrl = author.github
 
     # lazy way of checking if URL is correct right now
-    if((gitUrl[:20] != "https://github.com/") or (len(gitUrl.split("/")) != 4)):
+    if((gitUrl[:19] != "https://github.com/") or (len(gitUrl.split("/")) != 4)):
         return HttpResponseRedirect(return_url)
     
     data = feedparser.parse(gitUrl + ".atom")
@@ -342,18 +342,18 @@ def get_github_activity(request):
     # them - this seems to work out okay imo
     for x in data.get("entries"):
         found = False
-        gitId = %x["id"].encode(encoding).split("/")
+        gitId = x["id"].encode(encoding).split("/")
 
         # this is done to avoid adding duplicates
         # need to test this
-        for entry in posts:
-            entry.title.split()
+        for post in posts:
+            entry = post.title.split()
             if(entry[3] == gitId[1]):
                 found = True
                 break
         
         if(found is False):
-            post = Post.objects.create() #author_id="b5357e6874424df1af124fbb40d6621f"
+            post = Post.objects.create(author=gitAuthor)
 
             # want to stash activity ID somewhere to avoid duplication in later gets
             # it's in the title right now, just need to actually get it
