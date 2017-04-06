@@ -344,8 +344,7 @@ def get_github_activity(request):
         found = False
         gitId = x["id"].encode(encoding).split("/")
 
-        # this is done to avoid adding duplicates
-        # need to test this
+        # This is done to avoid adding duplicates
         for post in posts:
             entry = post.title.split()
             if(entry[3] == gitId[1]):
