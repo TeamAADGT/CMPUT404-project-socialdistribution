@@ -5,7 +5,7 @@ from service.authentication.node_basic import NodeBasicAuthentication
 from service.posts.pagination import PostsPagination
 from service.posts.serializers import PostSerializer
 from social.app.models.post import Post
-
+from social.app.models.node import Node
 
 class PublicPostsList(generics.ListAPIView):
     pagination_class = PostsPagination
@@ -19,7 +19,9 @@ class PublicPostsList(generics.ListAPIView):
         if not node.share_posts:
             return Post.objects.none()
 
-        queryset = Post.objects.filter(visibility="PUBLIC")
+        # Only share public posts that originated on our server (local)
+        local_node = Node.objects.filter(local=True).get()
+        queryset = Post.objects.filter(visibility="PUBLIC").filter(source__icontains=local_node.host)
 
         if not node.share_images:
             queryset = queryset.exclude(is_image=True)
