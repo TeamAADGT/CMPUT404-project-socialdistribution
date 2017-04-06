@@ -118,6 +118,11 @@ class Post(models.Model):
     def upload_url(self):
         return reverse('app:posts:upload-view', kwargs={'pk': self.id})
 
+    @classmethod
+    def get_id_from_uri(cls, uri):
+        match = re.match(r'^(.+)//(.+)/posts/(?P<pk>[0-9a-z\\-]+)', uri)
+        return match.group('pk')
+
 
 def keys(tuple_list):
     """
@@ -161,10 +166,19 @@ def get_all_foaf_posts(author):
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
+        print "NODE", node
         try:
-            for post_json in node.get_public_posts()['posts']:
+            some_json = node.get_public_posts()
+            for post_json in some_json['posts']:
                 author_json = post_json['author']
-                remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+
+                # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
+                if 'http' in author_json['id']:
+                    remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                else:
+                    remote_author_id = uuid.UUID(author_json['id'])
+
+
                 author, created = Author.objects.update_or_create(
                     id=remote_author_id,
                     defaults={
@@ -172,8 +186,12 @@ def get_remote_node_posts():
                         'displayName': author_json['displayName'],
                     }
                 )
+                if 'http' in post_json['id']:
+                    post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
+                else:
+                    post_id = uuid.UUID(post_json['id'])
                 post, created = Post.objects.update_or_create(
-                    id=uuid.UUID(post_json['id']),
+                    id=post_id,
                     defaults={
                         'title': post_json['title'],
                         'source': post_json['source'],
