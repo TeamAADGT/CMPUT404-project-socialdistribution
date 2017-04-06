@@ -19,6 +19,8 @@ from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
 
+from social.tasks import get_github_activity
+
 
 def get_remote_node_posts():
     node_posts = list()
@@ -118,11 +120,15 @@ def indexHome(request):
         context['all_posts'] = Post.objects.all().order_by('-published')
         return render(request, 'app/landing.html', context)
 
-
+# 127.0.0.1:8000/posts/ when logged in
 def view_posts(request):
     if request.user.is_authenticated():
         user = request.user
         author = Author.objects.get(user=request.user.id)
+        # This doesn't work (at least not on Heroku)
+        #get_github_activity(str(author.id), author.github)
+        # But this does?
+        get_github_activity.now(str(author.id), author.github)
         context = dict()
 
         # NOTE: this does the same thing as the function indexHome in app/view.py
@@ -312,48 +318,6 @@ def post_update(request, pk):
         "form": form,
     }
     return render(request, "posts/post_form.html", context)
-
-# Get the GitHub activity of a user
-@background(schedule=60)
-def get_github_activity(authorId, gitUrl):
-    gitAuthor = Author.objects.get(user=authorId)
-
-    # lazy way of checking if URL is correct right now
-    if((gitUrl[:19] == "https://github.com/") and (len(gitUrl.split("/")) == 4)):
-        data = feedparser.parse(gitUrl + ".atom")
-
-        # get users post
-        posts = Post.objects.filter(author__id=authorId).filter(title__contains="New GitHub Activity:")
-
-        # Get encoding to decode the data
-        encoding = data["encoding"]
-        # Go over all the entries for the RSS feed, turn them into posts, save
-        # them - this seems to work out okay imo
-        for x in data.get("entries"):
-            found = False
-            gitId = x["id"].encode(encoding).split("/")
-
-            # This is done to avoid adding duplicates
-            for post in posts:
-                entry = post.title.split()
-                if(entry[3] == gitId[1]):
-                    found = True
-                    break
-        
-            if(found is False):
-                post = Post.objects.create(author=gitAuthor)
-
-                # want to stash activity ID somewhere to avoid duplication in later gets
-                # it's in the title right now, just need to actually get it
-                post.title = "New GitHub Activity: %s" %gitId[1]
-                # uses given title to describe what the user did
-                post.description = x["title"].encode(encoding)
-                post.content_type = "text/markdown"
-                # gives a link to the page
-                post.content = "See [this page](%s)" %(x["link"].encode(encoding))
-                # use their given published date so that way it's properly sorted
-                post.published = x["published"].encode(encoding)
-                post.save()
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
