@@ -12,8 +12,14 @@ class PostForm(forms.ModelForm):
         required=False,
         help_text="Space-delimited",
     )
+
     content_type = forms.ChoiceField(choices=Post.TEXT_CONTENT_TYPES)
-    upload_content_type = forms.ChoiceField(choices=Post.UPLOAD_CONTENT_TYPES)
+
+    upload_content_type = forms.ChoiceField(
+        choices=[("", "")] + Post.IMAGE_CONTENT_TYPES,
+        required=False
+    )
+
     upload_content = forms.FileField(
         required=False
     )
@@ -73,6 +79,17 @@ class PostForm(forms.ModelForm):
                         category = Category.objects.create(name=name)
 
                     instance.categories.add(category)
+
+    # Source:
+    # https://docs.djangoproject.com/en/1.10/ref/forms/validation/#cleaning-and-validating-fields-that-depend-on-each-other
+    def clean(self):
+        cleaned_data = super(PostForm, self).clean()
+        upload_content = cleaned_data["upload_content"]
+        upload_content_type = cleaned_data["upload_content_type"]
+
+        # upload_content and type must either both be set or both not be set
+        if (upload_content and not upload_content_type) or (not upload_content and upload_content_type):
+            raise forms.ValidationError("Upload content type can only be set if a file is uploaded, and vice-versa.")
 
     class Meta:
         model = Post

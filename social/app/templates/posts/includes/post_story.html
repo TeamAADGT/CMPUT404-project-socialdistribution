@@ -23,7 +23,7 @@
             {{ post.content_html | safe }}
         {% endif %}
     </div>
-    {% if post.child_post %}
+    {% if post.child_post and post.child_post.is_image %}
         <div class="sd-post-upload">
             <img class="img-responsive img-rounded"
                  src="{{ post.upload_url }}"
