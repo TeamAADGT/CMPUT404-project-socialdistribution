@@ -19,8 +19,6 @@ from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
 
-from social.tasks import get_github_activity
-
 
 def get_remote_node_posts():
     node_posts = list()
@@ -120,15 +118,10 @@ def indexHome(request):
         context['all_posts'] = Post.objects.all().order_by('-published')
         return render(request, 'app/landing.html', context)
 
-# 127.0.0.1:8000/posts/ when logged in
 def view_posts(request):
     if request.user.is_authenticated():
         user = request.user
         author = Author.objects.get(user=request.user.id)
-        # This doesn't work (at least not on Heroku)
-        #get_github_activity(str(author.id), author.github)
-        # But this does?
-        get_github_activity.now(str(author.id), author.github)
         context = dict()
 
         # NOTE: this does the same thing as the function indexHome in app/view.py
