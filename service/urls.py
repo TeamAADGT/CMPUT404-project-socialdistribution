@@ -6,6 +6,7 @@ import service.friendrequest.views
 import service.users.views
 import service.nodes.views
 import service.posts.views
+import service.comments.views
 
 router = routers.DefaultRouter()
 router.register(r'users', service.users.views.UserViewSet)
@@ -23,4 +24,6 @@ urlpatterns = [
     # TODO: This doesn't work yet.
     url(r'^posts/(?P<pk>[0-9a-z\\-]+)/', service.posts.views.ParticularPostViewSet.as_view(), name='post-detail'),
     url(r'^author/(?P<pk>[0-9a-z\\-]+)/posts/', service.posts.views.AuthorPostsList.as_view(), name='author-posts-list'),
+    # /service/posts/<post_guid>/comments
+    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.post_comments, name='comment-detail'),
 ]
