@@ -82,6 +82,12 @@ class Post(models.Model):
 
     unlisted = models.BooleanField(default=False)
 
+    child_post = models.OneToOneField(
+        to='Post',
+        null=True,
+        blank=True,
+        related_name='parent_post'
+    )
 
     def get_absolute_url(self):
         return reverse('app:posts:detail', kwargs={'pk': self.id})
