@@ -2,6 +2,7 @@ import base64
 import feedparser
 from itertools import chain
 from operator import attrgetter
+from background_task import background
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -313,7 +314,7 @@ def post_update(request, pk):
     return render(request, "posts/post_form.html", context)
 
 # Get the GitHub activity of a user
-@login_required
+@background(schedule=60)
 def get_github_activity(authorId, gitUrl):
     gitAuthor = Author.objects.get(user=authorId)
 
