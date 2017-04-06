@@ -164,7 +164,13 @@ def get_remote_node_posts():
         try:
             for post_json in node.get_public_posts()['posts']:
                 author_json = post_json['author']
-                remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+
+                # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
+                if 'http' in author_json['id']:
+                    remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                else:
+                    remote_author_id = uuid.UUID(author_json['id'])
+
                 author, created = Author.objects.update_or_create(
                     id=remote_author_id,
                     defaults={
@@ -187,6 +193,7 @@ def get_remote_node_posts():
                 )
                 node_posts.append(post)
         except Exception, e:
+            raise
             logging.error(e)
             logging.warn('Skipping a post retrieved from ' + node.host)
             continue
