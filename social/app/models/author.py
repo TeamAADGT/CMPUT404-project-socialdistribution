@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from social.app.models.node import Node
-import social.tasks
+from social.tasks import get_github_activity
 
 
 class Author(models.Model):
