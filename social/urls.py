@@ -39,7 +39,7 @@ schema_view = get_schema_view(**api_kwargs)
 swagger_view = get_swagger_view(**api_kwargs)
 
 urlpatterns = [
-    url(r'^service/', include(rest_api_urls.urlpatterns, namespace='service')),
+    url(r'^', include(rest_api_urls.urlpatterns, namespace='service')),
     url(r'^admin/', admin.site.urls, name='admin'),
 
     url(r'^', include('social.app.urls', namespace='app')),

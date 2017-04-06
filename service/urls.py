@@ -42,7 +42,7 @@ internal_urls = [
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browseable API.
-urlpatterns = [
+service_urls = [
     url(r'^author/', include(author_urls)),
     url(r'^internal/', include(internal_urls, namespace="internal")),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
@@ -52,3 +52,6 @@ urlpatterns = [
         name='post-detail'),
 ]
 
+urlpatterns = [
+    url(r'^service/', include(service_urls)),
+]

@@ -26,7 +26,7 @@ class AuthorTestCase(TestCase):
         self.author.user.first_name = "Bob"
 
     def test_author_str(self):
-        self.assertEquals(str(self.author), "McBob, Bob (Bobbert)")
+        self.assertEquals(str(self.author), "Bobbert")
 
     def test_author_does_not_follow(self):
         user = User.objects.create_user("test2", "test@test.com", "pass1")
