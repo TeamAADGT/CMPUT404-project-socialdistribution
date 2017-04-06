@@ -1,29 +1,27 @@
 import base64
-import uuid
-from abc import ABCMeta
 
 from django import forms
 
 from social.app.models.category import Category
 from social.app.models.post import Post
 
-"""
-Overriding ModelForm.save idea from Wogan (http://stackoverflow.com/users/137902/wogan) on StackOverflow
-Link: http://stackoverflow.com/a/3929671 (CC-BY-SA 3.0)
-"""
 
-
-class PostFormBase(forms.ModelForm):
+class PostForm(forms.ModelForm):
     categories = forms.CharField(
         label="Categories",
         required=False,
         help_text="Space-delimited",
     )
+    content_type = forms.ChoiceField(choices=Post.TEXT_CONTENT_TYPES)
+    upload_content_type = forms.ChoiceField(choices=Post.UPLOAD_CONTENT_TYPES)
+    upload_content = forms.FileField(
+        required=False
+    )
 
     def save(self, commit=True, *args, **kwargs):
         request = kwargs["request"]
 
-        instance = super(PostFormBase, self).save(commit=False)
+        instance = super(PostForm, self).save(commit=False)
 
         instance.author = request.user.profile
 
@@ -36,11 +34,31 @@ class PostFormBase(forms.ModelForm):
             instance.origin = url
 
         self.save_categories(instance, commit)
-        self.save_hook(instance, request)
+
+        if 'upload_content' in self.files:
+            file_content = self.files['upload_content']
+            if instance.child_post is None:
+                instance.child_post = Post(
+                    author=instance.author,
+                    title="Upload",
+                    description="Upload",
+                    source=instance.source,
+                    origin=instance.origin,
+                    unlisted=instance.unlisted,
+                    visibility=instance.visibility,
+                    visible_to=instance.visible_to.all(),
+                    categories=instance.categories.all()
+                )
+
+                instance.child_post.content_type = self.cleaned_data["upload_content_type"]
+                instance.child_post.content = base64.b64encode(file_content.read())
 
         if commit:
             instance.save()
             self.save_m2m()
+
+            if instance.child_post:
+                instance.child_post.save()
 
         return instance
 
@@ -56,55 +74,7 @@ class PostFormBase(forms.ModelForm):
 
                     instance.categories.add(category)
 
-    def save_hook(self, instance, request):
-        """
-        Redefine this in the child class.
-        """
-        pass
-
-
-class TextPostForm(PostFormBase):
-    content_type = forms.ChoiceField(choices=Post.TEXT_CONTENT_TYPES)
-    categories = forms.CharField(
-        label="Categories",
-        required=False,
-        help_text="Space-delimited",
-    )
-
     class Meta:
         model = Post
         fields = ["title", "description", "content_type", "content", "visibility", "visible_to",
                   "unlisted"]
-
-
-class FilePostForm(PostFormBase):
-    content_type = forms.ChoiceField(choices=Post.UPLOAD_CONTENT_TYPES)
-    content = forms.FileField(
-        required=False
-    )
-
-    class Meta:
-        model = Post
-        fields = ["title", "description", "content_type", "content", "visibility", "visible_to"]
-
-    def save_hook(self, instance, request):
-        if 'content' in self.files:
-            file_content = self.files['content']
-            instance.content = base64.b64encode(file_content.read())
-
-        # Upload posts are always unlisted
-        instance.unlisted = True
-
-    def clean(self):
-        """
-        Conditional requirement logic from Benjamin Wohlwend (http://stackoverflow.com/users/45691/benjamin-wohlwend)
-        Link: http://stackoverflow.com/a/2307132 (CC-BY-SA 3.0)
-        """
-        cleaned_data = super(FilePostForm, self).clean()
-
-        is_insert = not Post.objects.filter(id=self.instance.id).exists()
-
-        if is_insert and 'content' not in self.files:
-            raise forms.ValidationError("A new upload post must have a file to upload.")
-        else:
-            return cleaned_data

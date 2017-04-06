@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views import generic
 
 from social.app.forms.comment import CommentForm
-from social.app.forms.post import TextPostForm, FilePostForm
+from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
@@ -121,23 +121,7 @@ def post_create(request):
     if not request.user.is_authenticated():
         raise Http404
 
-    form = TextPostForm(request.POST or None, request.FILES or None)
-    if form.is_valid():
-        instance = form.save(request=request)
-        messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(instance.get_absolute_url())
-    context = {
-        "form": form,
-    }
-    return render(request, "posts/post_form.html", context)
-
-
-@login_required
-def post_upload(request):
-    if not request.user.is_authenticated():
-        raise Http404
-
-    form = FilePostForm(request.POST or None, request.FILES or None)
+    form = PostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
@@ -181,10 +165,7 @@ def post_update(request, pk):
     if post.author != request.user.profile:
         return HttpResponse(status=401)
 
-    if post.is_upload():
-        form = FilePostForm(request.POST or None, request.FILES or None, instance=post)
-    else:
-        form = TextPostForm(request.POST or None, request.FILES or None, instance=post)
+    form = PostForm(request.POST or None, request.FILES or None, instance=post)
 
     if form.is_valid():
         instance = form.save(request=request)

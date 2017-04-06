@@ -11,9 +11,6 @@ posts_urlpatterns = [
     # /posts/add/
     url(r'^add/$', post_views.post_create, name='posts-add'),
 
-    # /posts/upload/
-    url(r'^upload/$', post_views.post_upload, name='upload-new'),
-
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/
     url(r'^(?P<pk>[0-9a-z\\-]+)/$', post_views.DetailView.as_view(), name='detail'),
 
