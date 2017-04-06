@@ -52,7 +52,7 @@ class AllPostsViewSet(viewsets.ReadOnlyModelViewSet):
         return self.list(request, *args, **kwargs)
 
 
-class AuthorPostsViewSet(generics.ListAPIView):
+class AuthorPostsView(generics.ListAPIView):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)

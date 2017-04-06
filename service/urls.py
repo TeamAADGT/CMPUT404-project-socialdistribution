@@ -13,23 +13,22 @@ import service.internal.authors.views
 # Viewset methods are mapped to URLs manually to get around issue where the API schema wouldn't show all available
 # endpoints, causing problems in Swagger
 author_urls = [
+    url(r'^(?P<pk>[0-9a-z\\-]+)/$',
+        service.authors.views.AuthorViewSet.as_view({'get': 'retrieve'}),
+        name='author-detail'),
     url(r'^posts/$', service.posts.views.AllPostsViewSet.as_view({'get': 'all-posts'}), name='all-posts-list'),
     url(r'^(?P<pk>[0-9a-fA-F-]+)/posts/$',
-        service.posts.views.AuthorPostsViewSet.as_view(),
+        service.posts.views.AuthorPostsView.as_view(),
         name='author-posts-list'),
     url(r'^(?P<pk>[0-9a-z\\-]+)/friends/$',
         service.authors.views.AuthorViewSet.as_view({'get': 'author_friends'}),
         name='author-friends-list'),
     url(r'^(?P<local_id>[0-9a-z\\-]+)/friends/(?P<other_host_name>[^/]+)/author/(?P<other_id>[0-9a-z\\-]+)/$',
         service.authors.views.AuthorViewSet.as_view({'get': 'two_authors_are_friends'}),
-        name='two-author-friends-with-other'),
-    url(r'^(?P<pk>[0-9a-z\\-]+)/$',
-        service.authors.views.AuthorViewSet.as_view({'get': 'detail'}),
-        name='author-detail'),
+        name='two-authors-are-friends'),
 ]
 
 internal_urls = [
-
     url(r'^author/(?P<pk>[0-9a-z\\-]+)/follow/$',
         service.internal.authors.views.follow,
         name='author-follow'),

@@ -8,7 +8,7 @@ from rest_framework.reverse import reverse
 from social.app.models.author import Author
 
 
-@api_view(["POST"])
+@api_view(["POST"], exclude_from_schema=True)
 @authentication_classes((SessionAuthentication,))
 @permission_classes((IsAuthenticated,))
 def follow(request, pk=None):
@@ -45,7 +45,7 @@ def follow(request, pk=None):
         status=status.HTTP_200_OK)
 
 
-@api_view(["POST"])
+@api_view(["POST"], exclude_from_schema=True)
 @authentication_classes((SessionAuthentication,))
 @permission_classes((IsAuthenticated,))
 def unfollow(request, pk=None):
@@ -82,7 +82,7 @@ def unfollow(request, pk=None):
         status=status.HTTP_200_OK)
 
 
-@api_view(["POST"])
+@api_view(["POST"], exclude_from_schema=True)
 @authentication_classes((SessionAuthentication,))
 @permission_classes((IsAuthenticated,))
 def friendrequest(request, pk=None):
