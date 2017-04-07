@@ -24,7 +24,7 @@ class UnfollowTestCase(APITestCase):
         self.unfollower.followed_authors.add(self.followee)
         self.unfollower.save()
 
-        self.url = reverse("service:author-unfollow", args=[self.followee.id])
+        self.url = reverse("service:internal:author-unfollow", args=[self.followee.id])
 
     def test_unfollowing_without_session_auth_fails(self):
         response = self.client.post(self.url)

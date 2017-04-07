@@ -22,7 +22,7 @@ class FollowTestCase(APITestCase):
         self.followee.node = node
         self.followee.save()
 
-        self.url = reverse("service:author-follow", args=[self.followee.id])
+        self.url = reverse("service:internal:author-follow", args=[self.followee.id])
 
     def test_following_without_session_auth_fails(self):
         response = self.client.post(self.url)
