@@ -51,8 +51,6 @@ service_urls = [
     url(r'^posts/', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
     url(r'^posts/(?P<pk>[0-9a-z\\-]+)/', service.posts.views.AllPostsViewSet.as_view({"get": "retrieve"}),
         name='post-detail'),
-    url(r'^author/(?P<me>[0-9a-z\\-]+)/friends/(?P<you>[0-9a-z\\-]+)',
-        service.authors.views.AuthorFriendship.as_view(), name='author-friendship'),
 ]
 
 urlpatterns = [
