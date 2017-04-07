@@ -12,6 +12,7 @@ class PublicPostsList(generics.ListAPIView):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
+
     # No permission class
 
     def get_queryset(self):
@@ -50,10 +51,10 @@ class AuthorPostsView(generics.ListAPIView):
         return get_local_posts(remote_node).filter(author__id=author_id)
 
 
-def get_local_posts(remote_node,public_only=False):
+def get_local_posts(remote_node, public_only=False):
     if remote_node is not None and not remote_node.share_posts:
         # We're specifically blocking this node, so short-circuit and return nothing
-            return Post.objects.none()
+        return Post.objects.none()
 
     queryset = Post.objects.filter(author__node__local=True)
 
@@ -69,4 +70,3 @@ def get_local_posts(remote_node,public_only=False):
         queryset = queryset.filter(content_type__in=[key for (key, value) in Post.TEXT_CONTENT_TYPES])
 
         return queryset
-
