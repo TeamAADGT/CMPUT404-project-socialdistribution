@@ -11,21 +11,21 @@
     <section id="relationship-buttons">
         <button
                 id="follow-button"
-                data-url="{% url 'service:author-follow' object.id %}"
+                data-url="{% url 'service:internal:author-follow' object.id %}"
                 {% ifequal show_follow_button False %}
                 style="display: none"
                 {% endifequal %}>Follow
         </button>
         <button
                 id="unfollow-button"
-                data-url="{% url 'service:author-unfollow' object.id %}"
+                data-url="{% url 'service:internal:author-unfollow' object.id %}"
                 {% ifequal show_unfollow_button False %}
                 style="display: none"
                 {% endifequal %}>Unfollow
         </button>
         <button
                 id="send-friend-request-button"
-                data-url="{% url 'service:author-friendrequest' object.id %}"
+                data-url="{% url 'service:internal:author-friendrequest' object.id %}"
                 {% ifequal show_friend_request_button False %}
                 style="display: none"
                 {% endifequal %}>Send Friend Request
