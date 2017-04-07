@@ -15,28 +15,30 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             {% if user.is_authenticated %}
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <a class="" href="{% url 'app:posts:posts-add' %}">Add Post</a>
-                </li>
-                <li>
-                    <a class="" href="{% url 'app:posts:upload-new' %}">Upload File</a>
-                </li>
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                       aria-expanded="false">{{ user.profile.displayName }}<span class="caret"></span></a>
 
-                    <ul class="dropdown-menu">
-                        <li><a href="{% url 'app:authors:posts-by-author' user.profile.id  %}">My Posts</a></li>
-                        <li><a href="{% url 'app:posts:index' %}">My Feed</a></li>
-                        <li><a href="{% url 'app:friend-requests-list' %}">View Friend Requests</a></li>
-                        <li><a href="{% url 'app:authors:list' %}">Find Authors</a></li>
-                        <li role="separator" class="divider"></li>
-                        <li><a href="{% url 'account_update' user.id %}">Update My Profile</a></li>
-                        <li role="separator" class="divider"></li>
-                        <li><a href={% url 'logout' %}>Logout</a></li>
-                    </ul>
-                </li>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if user.profile.activated %}
+                        <li>
+                            <a class="" href="{% url 'app:posts:posts-add' %}">Add Post</a>
+                        </li>
+                        <li>
+                            <a class="" href="{% url 'app:posts:upload-new' %}">Upload File</a>
+                        </li>
+                    {% endif %}
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false">{{ user.profile.displayName }}<span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{% url 'app:authors:posts-by-author' user.profile.id  %}">My Posts</a></li>
+                                <li><a href="{% url 'app:index' %}">My Stream</a></li>
+                                <li><a href="{% url 'app:friend-requests-list' %}">View Friend Requests</a></li>
+                                <li><a href="{% url 'app:authors:list' %}">Find Authors</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a href="{% url 'account_update' user.id %}">Update My Profile</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a href={% url 'logout' %}>Logout</a></li>
+                            </ul>
+                        </li>
             </ul>
             {% else %}
             <ul class="nav navbar-nav navbar-right">
