@@ -1,6 +1,6 @@
 import feedparser
 from background_task import background
-import social.app.models.author
+from social.app.models.author import Author
 from social.app.models.post import Post
 
 # Get the GitHub activity of a user

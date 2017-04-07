@@ -6,8 +6,7 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from social.app.models.node import Node
-import social.tasks
-
+#from social.tasks import get_github_activity
 
 class Author(models.Model):
     user = models.OneToOneField(User, related_name='user')
@@ -102,8 +101,6 @@ def create_profile(sender, **kwargs):
         user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
-        get_github_activity(str(user.id))
-
 
 post_save.connect(create_profile, sender=User)
 
