@@ -24,7 +24,12 @@ def all_posts(request):
     """
     remote_posts = get_remote_node_posts()
     context = dict()
-    context["user_posts"] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
+    context["user_posts"] = \
+        (Post.objects
+         .filter(visibility="PUBLIC")
+         .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+         .order_by('-published'))
+
     return render(request, 'app/index.html', context)
 
 
@@ -66,9 +71,11 @@ def my_stream_posts(request):
 
         # TODO: case IV: posts.visibility=private
 
-        posts = public_and_following_posts | \
-                friend_posts | \
-                foaf_posts
+        posts = ((public_and_following_posts |
+                  friend_posts |
+                  foaf_posts)
+                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                 .distinct())
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'))
 
