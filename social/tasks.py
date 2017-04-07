@@ -12,11 +12,11 @@ from social.app.models.post import Post
 def get_github_activity(authorId):
     gitAuthor = Author.objects.get(id=authorId)
     gitUrl = gitAuthor.github
-    print("Entered")
 
     # Using RegEx to check if it's a proper URL
-    # Reference source: 
-    if((gitUrl[:19] == "https://github.com/")):
+    # Reference source: https://github.com/lorey/social-media-profiles-regexs#github
+    # TODO: Fix this so that it won't continue if given something like /user/repo
+    if(r'http(s)?:\/\/(www\.)?github\.com/[A-z 0-9 _ -]+\/?$'):
         data = feedparser.parse(gitUrl + ".atom")
 
         # get users post
@@ -27,10 +27,8 @@ def get_github_activity(authorId):
 
         # Go over all the entries for the RSS feed, turn them into posts (if possible), save them
         for x in data.get("entries"):
-            found = False
             gitId = x["id"].encode(encoding)
             gitTitle = x["title"].encode(encoding)
-            publishDate = x["published"].encode(encoding)
             contentStr = "See [this page](%s)" %(x["link"].encode(encoding))
 
             # Create or update the post
@@ -42,28 +40,5 @@ def get_github_activity(authorId):
                                        "description": gitTitle,
                                        "content_type": "text/markdown",
                                        "content": contentStr,
-                                       "published": publishDate},
+                                       "published": x["published"].encode(encoding)},
                            )
-
-        '''
-            for post in posts:
-               
-                #entry = post.title.split()
-                #if(entry[3] == gitId[1]):
-                #    found = True
-                #    break
-
-            if(found is False):
-                post = Post.objects.create(author=gitAuthor)
-
-                post.title = "New GitHub Activity"
-                post.githubId = gitId[1]
-                # uses given title to describe what the user did
-                post.description = x["title"].encode(encoding)
-                post.content_type = "text/markdown"
-                # gives a link to the page
-                post.content = "See [this page](%s)" %(x["link"].encode(encoding))
-                # use their given published date so that way it's properly sorted
-                post.published = x["published"].encode(encoding)
-                post.save()
-        '''
