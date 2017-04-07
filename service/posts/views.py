@@ -1,4 +1,5 @@
 from rest_framework import viewsets, views, generics
+from rest_framework.decorators import list_route
 from rest_framework.permissions import IsAuthenticated
 
 from service.authentication.node_basic import NodeBasicAuthentication
@@ -11,6 +12,7 @@ class PublicPostsList(generics.ListAPIView):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
+
     # No permission class
 
     def get_queryset(self):
@@ -30,8 +32,13 @@ class AllPostsViewSet(viewsets.ReadOnlyModelViewSet):
 
         return get_local_posts(remote_node)
 
+    @list_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,))
+    def all_posts(self, request, *args, **kwargs):
+        # Needed to make sure this shows up in the schema -- collides with /posts/ otherwise
+        return self.list(request, *args, **kwargs)
 
-class AuthorPostsList(generics.ListAPIView):
+
+class AuthorPostsView(generics.ListAPIView):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
@@ -44,7 +51,7 @@ class AuthorPostsList(generics.ListAPIView):
         return get_local_posts(remote_node).filter(author__id=author_id)
 
 
-def get_local_posts(remote_node,public_only=False):
+def get_local_posts(remote_node, public_only=False):
     if remote_node is not None and not remote_node.share_posts:
         # We're specifically blocking this node, so short-circuit and return nothing
         return Post.objects.none()
