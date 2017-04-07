@@ -82,9 +82,12 @@ def my_stream_posts(request):
 
 class DetailView(generic.DetailView):
     """
-    Detail View
     """
     model = Post
+    # TODO: This needs to filter out posts the current user can't see
+    # TODO: If the post being viewed is a remote post, we need to fetch the latest version of it first
+    # Image posts can't be viewed directly, only as part of their parent post
+    queryset = Post.objects.filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
     template_name = 'posts/detail.html'
 
 
