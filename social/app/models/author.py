@@ -93,17 +93,26 @@ class Author(models.Model):
         match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
         return match.group('pk')
 
-
 def create_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     user = kwargs["instance"]
-    if not user.is_staff:
+    if not user.is_staff and kwargs["created"]:
         user_profile = Author(user=user)
-        get_github_activity(str(userprofile.id))
         user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
+        if user_profile.github != "":
+            get_github_activity(user_profile.id)
+
+def update_profile(sender, **kwargs):
+    from social.tasks import get_github_activity
+    user = kwargs["instance"]
+    if not user.is_staff and kwargs["updated"]:
+        user_profile = Author(user=user)
+        if user_profile.github != "":
+            get_github_activity(user_profile.id)
 
 post_save.connect(create_profile, sender=User)
+post_save.connect(update_profile, sender=User)
 
 User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0])
