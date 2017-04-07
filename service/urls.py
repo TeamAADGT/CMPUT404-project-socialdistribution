@@ -20,9 +20,9 @@ urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^friendrequest/', service.friendrequest.views.friendrequest, name='friend-request'),
-    url(r'^posts/', service.posts.views.AllPostsViewSet.as_view({"get": "list"}), name='all-posts-list'),
-    # TODO: This doesn't work yet.
-    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/', service.posts.views.ParticularPostViewSet.as_view(), name='post-detail'),
+    url(r'^posts/', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
+    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/', service.posts.views.AllPostsViewSet.as_view({"get": "retrieve"}),
+        name='post-detail'),
     url(r'^author/(?P<pk>[0-9a-z\\-]+)/posts/', service.posts.views.AuthorPostsList.as_view(), name='author-posts-list'),
     # /service/posts/<post_guid>/comments
     url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.post_comments, name='comment-detail'),
