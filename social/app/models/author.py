@@ -6,7 +6,6 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from social.app.models.node import Node
-#from social.tasks import get_github_activity
 
 class Author(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -96,9 +95,11 @@ class Author(models.Model):
 
 
 def create_profile(sender, **kwargs):
+    from social.tasks import get_github_activity
     user = kwargs["instance"]
-    if not user.is_staff and kwargs["created"]:
+    if not user.is_staff:
         user_profile = Author(user=user)
+        get_github_activity(str(userprofile.id))
         user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
