@@ -1,9 +1,13 @@
-from rest_framework import viewsets, status
+import uuid
+
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import viewsets, status, generics
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from service.authentication.node_basic import NodeBasicAuthentication
 from service.authors.serializers import AuthorSerializer, AuthorURLSerializer
@@ -13,6 +17,7 @@ from social.app.models.author import Author
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
+    authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
@@ -134,3 +139,38 @@ class AuthorViewSet(viewsets.ModelViewSet):
         return Response(
             {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
             status=status.HTTP_200_OK)
+
+
+class AuthorFriendship(APIView):
+    authentication_classes = (NodeBasicAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, me=None, you=None):
+        author_friends_queryset = Author.friends.through.objects.filter(
+            from_author_id=me)
+
+        # Verify that the first uuid exists
+        if len(author_friends_queryset) == 0:
+            return Response({
+                "query": "friends",
+                "error": "Author %s does not exist" % str(me),
+                "status": 404,
+            }, 404)
+
+        friendship_record = author_friends_queryset.filter(
+            from_author_id=me,
+            to_author_id=you)
+
+        is_friends = False
+        authors = {Author.objects.get(id=me).get_uri()}
+
+        # Verify and add the second uuid
+        if len(friendship_record) == 1:
+            is_friends = True
+            authors.add(Author.objects.get(id=you).get_uri())
+
+        return Response({
+            "query": "friends",
+            "authors": authors,
+            "friends": is_friends,
+        })

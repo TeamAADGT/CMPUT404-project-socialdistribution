@@ -94,6 +94,9 @@ class Author(models.Model):
         match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
         return match.group('pk')
 
+    def get_uri(self):
+        return self.node.service_url + 'author/' + str(self.id)
+
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]

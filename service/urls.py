@@ -23,4 +23,6 @@ urlpatterns = [
     url(r'^posts/(?P<pk>[0-9a-z\\-]+)/', service.posts.views.AllPostsViewSet.as_view({"get": "retrieve"}),
         name='post-detail'),
     url(r'^author/(?P<pk>[0-9a-z\\-]+)/posts/', service.posts.views.AuthorPostsList.as_view(), name='author-posts-list'),
+    url(r'^author/(?P<me>[0-9a-z\\-]+)/friends/(?P<you>[0-9a-z\\-]+)',
+        service.authors.views.AuthorFriendship.as_view(), name='author-friendship'),
 ]
