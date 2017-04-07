@@ -16,7 +16,6 @@ from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
 from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
-from social.tasks import get_github_activity
 
 def all_posts(request):
     """
@@ -38,7 +37,6 @@ def my_stream_posts(request):
     if request.user.is_authenticated():
         user = request.user
         author = Author.objects.get(user=request.user.id)
-        get_github_activity.now(str(author.id))
 
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
