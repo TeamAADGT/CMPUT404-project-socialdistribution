@@ -69,4 +69,4 @@ def get_local_posts(remote_node, public_only=False):
         # If a node isn't authenticated or we just decided to not do it, don't send over images
         queryset = queryset.filter(content_type__in=[key for (key, value) in Post.TEXT_CONTENT_TYPES])
 
-        return queryset
+    return queryset
