@@ -3,6 +3,7 @@ from django.test import TestCase
 
 from social.app.models.author import Author
 from social.app.models.node import Node
+from social.app.models.post import Post
 
 
 class NodeTestCase(TestCase):
@@ -40,3 +41,10 @@ class AuthorTestCase(TestCase):
         self.author.followed_authors.add(author)
 
         self.assertTrue(self.author.follows(author))
+
+    def test_cyclic(self):
+        post = Post.objects.create(author=self.author)
+
+        fetched_post = self.author.get_posts()[0]
+
+        self.assertEquals(post.id, fetched_post.id)

@@ -94,6 +94,10 @@ class Author(models.Model):
         match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
         return match.group('pk')
 
+    def get_posts(self):
+        from social.app.models.post import Post
+        return Post.objects.filter(author__id=self.id)
+
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
