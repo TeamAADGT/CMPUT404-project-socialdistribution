@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views import generic
 
 from social.app.forms.comment import CommentForm
-from social.app.forms.post import TextPostForm, FilePostForm
+from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
@@ -24,7 +24,12 @@ def all_posts(request):
     """
     remote_posts = get_remote_node_posts()
     context = dict()
-    context["user_posts"] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
+    context["user_posts"] = \
+        (Post.objects
+         .filter(visibility="PUBLIC")
+         .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+         .order_by('-published'))
+
     return render(request, 'app/index.html', context)
 
 
@@ -48,12 +53,12 @@ def my_stream_posts(request):
             logging.error(e)
 
         # case I: posts.visibility=public and following
-        public_and_following_posts = get_all_public_posts()\
-            .filter(~Q(author__id=user.profile.id))\
+        public_and_following_posts = get_all_public_posts() \
+            .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all())
 
         # case II: posts.visibility=friends
-        friend_posts = get_all_friend_posts(author)\
+        friend_posts = get_all_friend_posts(author) \
             .filter(author__id__in=author.followed_authors.all()) \
             .filter(~Q(author__id=user.profile.id))
 
@@ -66,9 +71,11 @@ def my_stream_posts(request):
 
         # TODO: case IV: posts.visibility=private
 
-        posts = public_and_following_posts | \
-            friend_posts | \
-            foaf_posts
+        posts = ((public_and_following_posts |
+                  friend_posts |
+                  foaf_posts)
+                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                 .distinct())
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'))
 
@@ -82,31 +89,13 @@ def my_stream_posts(request):
 
 class DetailView(generic.DetailView):
     """
-    Detail View
     """
     model = Post
+    # TODO: This needs to filter out posts the current user can't see
+    # TODO: If the post being viewed is a remote post, we need to fetch the latest version of it first
+    # Image posts can't be viewed directly, only as part of their parent post
+    queryset = Post.objects.filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
     template_name = 'posts/detail.html'
-
-
-def get_upload_file(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-
-    if not post.is_upload():
-        # doesn't make sense to do this
-        return HttpResponseForbidden()
-
-    if post.is_image():
-        content = base64.b64decode(post.content)
-        content_type = post.content_type.split(';')[0]
-    else:
-        # is application/base64, so don't decode
-        content = post.content
-        content_type = post.content_type
-
-    return HttpResponse(
-        content=content,
-        content_type=content_type,
-    )
 
 
 def view_post_comments(request, pk):
@@ -121,23 +110,7 @@ def post_create(request):
     if not request.user.is_authenticated():
         raise Http404
 
-    form = TextPostForm(request.POST or None, request.FILES or None)
-    if form.is_valid():
-        instance = form.save(request=request)
-        messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(instance.get_absolute_url())
-    context = {
-        "form": form,
-    }
-    return render(request, "posts/post_form.html", context)
-
-
-@login_required
-def post_upload(request):
-    if not request.user.is_authenticated():
-        raise Http404
-
-    form = FilePostForm(request.POST or None, request.FILES or None)
+    form = PostForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
@@ -165,7 +138,7 @@ def post_delete(request, pk):
     # By igor(https://stackoverflow.com/users/978434/igor)
     # On StackOverflow url: https://stackoverflow.com/questions/15703475/how-to-make-reverse-lazy-lazy-for-arguments-too
     # License: CC-BY-SA 3.0
-    success_url = reverse('app:authors:posts-by-author', kwargs = {'pk' : request.user.profile.id, })
+    success_url = reverse('app:authors:posts-by-author', kwargs={'pk': request.user.profile.id, })
     # Upon success redirects user to /authors/<current_user_guid>/posts/
     return HttpResponseRedirect(success_url)
 
@@ -181,10 +154,9 @@ def post_update(request, pk):
     if post.author != request.user.profile:
         return HttpResponse(status=401)
 
-    if post.is_upload():
-        form = FilePostForm(request.POST or None, request.FILES or None, instance=post)
-    else:
-        form = TextPostForm(request.POST or None, request.FILES or None, instance=post)
+    form = PostForm(request.POST or None, request.FILES or None,
+                    instance=post,
+                    initial={'upload_content_type': post.child_post.content_type if post.child_post else ""})
 
     if form.is_valid():
         instance = form.save(request=request)
