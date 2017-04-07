@@ -94,20 +94,17 @@ class Author(models.Model):
         return match.group('pk')
 
 def create_profile(sender, **kwargs):
-    from social.tasks import get_github_activity
     user = kwargs["instance"]
     if not user.is_staff and kwargs["created"]:
         user_profile = Author(user=user)
         user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
-        if user_profile.github != "":
-            get_github_activity(user_profile.id)
 
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     user = kwargs["instance"]
-    if not user.is_staff and kwargs["updated"]:
+    if not user.is_staff:
         user_profile = Author(user=user)
         if user_profile.github != "":
             get_github_activity(user_profile.id)
