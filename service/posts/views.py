@@ -1,4 +1,4 @@
-from rest_framework import viewsets, views, generics
+from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated
 
 from service.authentication.node_basic import NodeBasicAuthentication

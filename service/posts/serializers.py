@@ -1,11 +1,13 @@
 from rest_framework import serializers
 
 from service.authors.serializers import SimpleAuthorSerializer
+from service.comments.serializers import CommentSerializer
 from social.app.models.post import Post
 
 
 class PostSerializer(serializers.HyperlinkedModelSerializer):
     author = SimpleAuthorSerializer()
+    comments = CommentSerializer(many=True)
 
     contentType = serializers.CharField(source="content_type", read_only=True)
 

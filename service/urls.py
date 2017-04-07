@@ -25,5 +25,5 @@ urlpatterns = [
         name='post-detail'),
     url(r'^author/(?P<pk>[0-9a-z\\-]+)/posts/', service.posts.views.AuthorPostsList.as_view(), name='author-posts-list'),
     # /service/posts/<post_guid>/comments
-    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.post_comments, name='comment-detail'),
+    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.CommentListView.as_view(), name='comment-detail'),
 ]
