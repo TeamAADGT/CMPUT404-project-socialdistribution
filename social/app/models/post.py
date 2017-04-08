@@ -130,6 +130,9 @@ class Post(models.Model):
         else:
             return ""
 
+    def visible_to_remote_author(self, remote_author_id):
+        return len(self.visible_to.filter(author_id=remote_author_id)) > 0
+
     @classmethod
     def get_id_from_uri(cls, uri):
         match = re.match(r'^(.+)//(.+)/posts/(?P<pk>[0-9a-z\\-]+)', uri)

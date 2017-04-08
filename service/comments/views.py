@@ -19,7 +19,6 @@ class CommentListView(generics.ListCreateAPIView):
             return CreateCommentSerializer
 
     def get_queryset(self):
-
         remote_node = self.request.user
         anonymous_node = remote_node is None or not remote_node.is_authenticated
 
@@ -45,37 +44,11 @@ class CommentListView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        comment = serializer
+        comment = serializer.save()
+        print "Comment Saved", comment
 
 
 
-
-
-
-
-
-
-
-
-        '''
-        context = dict()
-        context["query"] = "addComment"
-
-        try:
-            Comment(
-                id=post_id,
-                author= self.kwargs["author"],
-                comment= self.kwargs["comment"],
-            ).save()
-
-            context["success"] = "true"
-            context["message"] = "Comment Added"
-            return context
-
-        except: # If they don't have the visibility to comment on that post
-            context["success"] = "false"
-            context["message"] = "Comment not allowed"
-        '''
 
 
 

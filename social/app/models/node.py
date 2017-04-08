@@ -48,6 +48,12 @@ class Node(models.Model):
                 % url)
             return []
 
+    @classmethod
+    def get_host_from_uri(cls, uri):
+        p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
+        m = re.search(p, uri)
+        return m.group('host')
+
     def get_public_posts(self):
         url = self.service_url + "posts/"
         response = requests.get(url, auth=(self.username, self.password)).json()
