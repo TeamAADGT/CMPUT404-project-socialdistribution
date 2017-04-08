@@ -57,37 +57,31 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
              "authors": AuthorURLSerializer(friends, context={'request': request}, many=True).data},
             status=status.HTTP_200_OK)
 
-
-class AuthorFriendship(APIView):
-    authentication_classes = (NodeBasicAuthentication,)
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request, me=None, other_host=None, you=None):
-        author_friends_queryset = Author.friends.through.objects.filter(
-            from_author_id=me)
-
-        # Verify that the first uuid exists
-        if len(author_friends_queryset) == 0:
+    @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
+    def two_authors_are_friends(self, request, local_id=None, other_host_name=None, other_id=None):
+        try:
+            local_author = Author.objects.get(id=local_id)
+        except ObjectDoesNotExist, e:
             return Response({
                 "query": "friends",
-                "error": "Author %s does not exist" % str(me),
+                "error": "Author %s does not exist" % str(local_id),
                 "status": 404,
             }, 404)
 
-        friendship_record = author_friends_queryset.filter(
-            from_author_id=me,
-            to_author_id=you)
-
-        is_friends = False
-        authors = {Author.objects.get(id=me).get_uri()}
-
-        # Verify and add the second uuid
-        if len(friendship_record) == 1:
-            is_friends = True
-            authors.add(Author.objects.get(id=you).get_uri())
+        # Verify the friendship on our end
+        is_friendship_record = Author.friends.through.objects.filter(
+            from_author_id=local_id,
+            to_author_id=other_id).exists()
+        # Verify the requested to_author matches the given other_host_name
+        is_remote_author_record = Author.objects.filter(id=other_id, node__host=other_host_name).exists()
+        
+        is_friends = is_friendship_record and is_remote_author_record
 
         return Response({
             "query": "friends",
-            "authors": authors,
+            "authors": [
+                local_author.get_uri(),
+                Author.get_uri_from_host_and_uuid(other_host_name, other_id)
+            ],
             "friends": is_friends,
         })
