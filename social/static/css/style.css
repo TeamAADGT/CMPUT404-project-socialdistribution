@@ -21,6 +21,10 @@ body {
     margin-top: 20px;
 }
 
+.sd-margin-bottom-10 {
+    margin-bottom: 10px;
+}
+
 .sd-margin-bottom-20 {
     margin-bottom: 20px;
 }
@@ -59,6 +63,11 @@ body {
 }
 
 .sd-post .sd-post-media-container img {
+}
+
+/* === Adding Post === */
+.sd-author-item {
+
 }
 
 /* === Posts === */
