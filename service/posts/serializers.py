@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from service.authors.serializers import SimpleAuthorSerializer
+from service.authors.serializers import SimpleAuthorSerializer, UnknownAuthorSerializer
 from social.app.models.author import Author
 from social.app.models.post import Post
 
@@ -36,19 +36,15 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
 
 class FOAFCheckPostSerializer(serializers.Serializer):
     query = serializers.CharField(
-        help_text='The requested query to be performed. Must be equal to "getPost".',
+        help_text='The requested query to be performed. Must be equal to "getPost".'
     )
     postid = serializers.UUIDField()
-    url = serializers.HyperlinkedRelatedField(
-        view_name="service:post-detail",
-        queryset=Post.objects.all(),
+    url = serializers.URLField(
         help_text='The URI of the requested Post. Example: http://service/posts/{POST_ID} (required)'
     )
-    author = SimpleAuthorSerializer(
-
-    )
-    friends = serializers.HyperlinkedRelatedField(
-        view_name="service:author-detail",
-        many=True,
-        queryset=Author.objects.all()
+    author = UnknownAuthorSerializer()
+    friends = serializers.ListField(
+        child=serializers.URLField(),
+        required=True,
+        allow_empty=True
     )

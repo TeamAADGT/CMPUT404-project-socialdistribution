@@ -1,3 +1,4 @@
+import requests
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from rest_framework import viewsets, views, generics, mixins, status
@@ -8,6 +9,8 @@ from rest_framework.response import Response
 from service.authentication.node_basic import NodeBasicAuthentication
 from service.posts.pagination import PostsPagination
 from service.posts.serializers import PostSerializer, FOAFCheckPostSerializer
+from social.app.models.author import Author
+from social.app.models.node import Node
 from social.app.models.post import Post
 
 
@@ -117,6 +120,82 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
         # Source: https://github.com/encode/django-rest-framework/blob/master/rest_framework/mixins.py#L18 (2017-04-07)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        remote_node = request.user
+
+        data = serializer.validated_data
+
+        author_dict = data["author"]
+
+        if remote_node.service_url != author_dict["host"]:
+            return Response({"detail": "You can't request a Post for an Author that's not local to yourself."},
+                            status=status.HTTP_403_FORBIDDEN)
+        try:
+            post = Post.objects.get(id=data["postid"], node__local=True)
+        except Post.DoesNotExist:
+            return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if post.visibility != "FOAF":
+            return Response({"detail": "Post's visibility is not set to FOAF. Please retry using GET instead."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        requesting_author_id = Author.get_id_from_uri(author_dict["id"])
+        try:
+            requesting_author = remote_node.create_or_update_remote_author(requesting_author_id)
+        except requests.exceptions.RequestException:
+            return Response({"detail": "Error retrieving remote Author."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return_post = False
+
+        verified_requester_friends = []
+
+        if post.author.friends_with(requesting_author):
+            return_post = True
+        else:
+            # Need to first verify with requesting_author's node, according to spec
+            for author_uri in author_dict["friends"]:
+                friends = remote_node.get_if_two_authors_are_friends(requesting_author_id, author_uri)
+                if friends:
+                    verified_requester_friends.append(author_uri)
+
+            for requester_friend_uri in verified_requester_friends:
+
+                (host, requester_friend_id) = Author.parse_uri(requester_friend_uri)
+
+                try:
+                    requester_friend_node = Node.objects.get(host=host)
+                except Node.DoesNotExist:
+                    # We aren't connected with this Author's node, so not much we can do with it
+                    continue
+
+                if requester_friend_node.local:
+                    # Easy mode! We already know the requester and this friend are friends according to requester's node
+                    # So now we just check if we agree locally
+
+                    requester_friend = Author.objects.get(id=requester_friend_id)
+                    return_post = post.author.friends_with(requester_friend) \
+                                  and requester_friend.friends_with(requesting_author)
+                elif requester_friend_node == requesting_author.node:
+                    # The requester and the friend in the middle are from the same non-local node
+
+                    requester_friend = requester_friend_node.create_or_update_remote_author(requester_friend_id)
+
+                    return_post = post.author.friends_with(requester_friend) \
+                                  and requester_friend_node.get_if_two_authors_are_friends(requester_friend.id,
+                                                                                           post.author_id)
+                else:
+                    # The requester and the friend in the middle are from different non-local nodes
+                    requester_friend = requester_friend_node.create_or_update_remote_author(requester_friend_id)
+
+                    return_post = \
+                        post.author.friends_with(requester_friend) \
+                        and requester_friend_node.get_if_two_authors_are_friends(requester_friend.id, post.author_id) \
+                        and requester_friend_node.get_if_two_authors_are_friends(requester_friend_id,
+                                                                                 requesting_author.author_id)
+
+        if return_post:
+            # Do stuff
+            pass
 
         headers = self.get_success_headers(serializer.data)
         response_data = {}

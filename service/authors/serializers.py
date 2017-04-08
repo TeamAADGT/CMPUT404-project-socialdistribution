@@ -14,32 +14,38 @@ class AuthorURLSerializer(serializers.ModelSerializer):
 
 class SimpleAuthorSerializer(serializers.ModelSerializer):
     id = serializers.HyperlinkedIdentityField(
-        view_name='service:author-detail',
-        lookup_field='pk',
-        help_text='The URI of the Author. (required)'
-    )
-    host = serializers.CharField(
-        source='node.service_url',
-        help_text='The hostname of the Author. (required)'
-    )
+        view_name='service:author-detail', read_only=True, lookup_field='pk')
+    host = serializers.CharField(source='node.service_url')
     url = serializers.HyperlinkedIdentityField(
-        view_name='service:author-detail',
-        lookup_field='pk',
-        required=False,
-        help_text='The URI of the Author. (optional)'
-    )
-    github = serializers.URLField(
-        required=False,
-        help_text="The URL of the Author's Github profile. Example: https://github.com/username (optional)"
-    )
+        view_name='service:author-detail', read_only=True, lookup_field='pk')
 
     class Meta:
         model = Author
-        fields = ('id', 'host', 'displayName', 'url', 'github')
+        fields = ('id', 'host', 'displayName', 'url',)
 
 
-class AuthorSerializer(SimpleAuthorSerializer):
-    friends = AuthorURLSerializer(many=True)
+class UnknownAuthorSerializer(serializers.Serializer):
+    """
+    Used in input cases where we don't necessarily know about a remote Author yet, so it doesn't make sense
+    to use a ModelSerializer
+    """
+    id = serializers.URLField()
+    host = serializers.URLField()
+    url = serializers.URLField()
+    github = serializers.URLField(
+        required=False,
+        allow_blank=True
+    )
+
+
+class AuthorSerializer(serializers.ModelSerializer):
+    id = serializers.HyperlinkedIdentityField(
+        view_name='service:author-detail', read_only=True, lookup_field='pk')
+    host = serializers.URLField(source='node.service_url')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='service:author-detail', read_only=True, lookup_field='pk')
+
+    friends = AuthorURLSerializer(many=True, read_only=True)
     firstName = serializers.CharField(source='user.first_name')
     lastName = serializers.CharField(source='user.last_name')
     email = serializers.CharField(source='user.email')

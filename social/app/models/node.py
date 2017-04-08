@@ -7,6 +7,9 @@ from django.db import models
 from django.db.models.signals import post_save
 import logging
 
+from social.app.models.author import Author
+
+
 class Node(models.Model):
     """
     Represents a local or remote server upon which remote authors and posts reside
@@ -37,6 +40,19 @@ class Node(models.Model):
         url = self.service_url + "author/" + str(uuid) + "/friends"
         return requests.get(url, auth=(self.username, self.password)).json()
 
+    def get_if_authors_are_friends(self, first_author_id, second_author_uri):
+        (second_author_host, second_author_id) = Author.parse_uri(second_author_uri)
+        second_author_host = second_author_host.replace('http://', '', 1).replace('https://', '', 1)
+
+        if second_author_host[-1] != "/":
+            second_author_host += "/"
+
+        url = (self.service_url
+               + "author/" + str(first_author_id)
+               + "/friends/" + second_author_host + str(second_author_id))
+
+        return requests.get(url, auth=(self.username, self.password)).json()["friends"]
+
     def get_author_posts(self):
         url = self.service_url + "author/posts/"
         response = requests.get(url, auth=(self.username, self.password)).json()
@@ -60,7 +76,6 @@ class Node(models.Model):
                 "%s did not conform to the expected response format! Returning an empty list of posts!"
                 % url)
             return []
-
 
     def create_or_update_remote_author(self, uuid):
         json = self.get_author(uuid).json()
