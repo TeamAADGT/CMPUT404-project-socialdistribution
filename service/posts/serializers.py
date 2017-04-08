@@ -31,3 +31,16 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
         model = Post
         fields = ("title", "source", "origin", "description", "contentType", "content", "author",
                   "categories", "comments", "published", "id", "url", "visibility", "visibleTo", "unlisted")
+
+
+class FOAFCheckPostSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    postid = serializers.UUIDField()
+    url = serializers.HyperlinkedRelatedField(
+        view_name="service:post-detail"
+    )
+    author = SimpleAuthorSerializer()
+    friends = serializers.HyperlinkedRelatedField(
+        view_name="service:author-detail",
+        many=True
+    )

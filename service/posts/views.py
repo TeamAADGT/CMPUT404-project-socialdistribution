@@ -1,12 +1,13 @@
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
-from rest_framework import viewsets, views, generics, mixins
+from rest_framework import viewsets, views, generics, mixins, status
 from rest_framework.decorators import list_route
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from service.authentication.node_basic import NodeBasicAuthentication
 from service.posts.pagination import PostsPagination
-from service.posts.serializers import PostSerializer
+from service.posts.serializers import PostSerializer, FOAFCheckPostSerializer
 from social.app.models.post import Post
 
 
@@ -48,7 +49,7 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return self.list(request, *args, **kwargs)
 
 
-class SpecificPostsView(generics.ListAPIView):
+class SpecificPostsView(generics.ListCreateAPIView):
     """
     Returns the local post with the specified ID, if any.
     
@@ -60,11 +61,33 @@ class SpecificPostsView(generics.ListAPIView):
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    def get_serializer(self, *args, **kwargs):
+        if self.request.method == 'GET':
+            return PostSerializer
+        return FOAFCheckPostSerializer
+
     def get_queryset(self):
         post_id = self.kwargs["pk"]
         remote_node = self.request.user
 
         return get_local_posts(remote_node).filter(Q(id=post_id) | Q(parent_post__id=post_id))
+
+    def create(self, request, *args, **kwargs):
+        """
+        Overrides what response to a POST, but we're not actually creating.
+        
+        Instead we're checking whether the requesting author can see this FOAF post or not.
+        
+        Source: https://github.com/encode/django-rest-framework/blob/master/rest_framework/mixins.py#L18 (2017-04-07)
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+
+
+        headers = self.get_success_headers(serializer.data)
+        response_data = {}
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class AuthorPostsView(generics.ListAPIView):
