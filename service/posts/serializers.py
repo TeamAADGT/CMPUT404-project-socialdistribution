@@ -5,6 +5,11 @@ from social.app.models.post import Post
 
 
 class PostSerializer(serializers.HyperlinkedModelSerializer):
+    # Not required by the spec, but makes testing a little easier
+    url = serializers.HyperlinkedIdentityField(
+        view_name="service:post-detail",
+        source='id'
+    )
     author = SimpleAuthorSerializer()
 
     contentType = serializers.CharField(source="content_type", read_only=True)
@@ -25,4 +30,4 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Post
         fields = ("title", "source", "origin", "description", "contentType", "content", "author",
-                  "categories", "comments", "published", "id", "visibility", "visibleTo", "unlisted")
+                  "categories", "comments", "published", "id", "url", "visibility", "visibleTo", "unlisted")
