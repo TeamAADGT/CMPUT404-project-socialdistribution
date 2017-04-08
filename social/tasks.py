@@ -10,6 +10,7 @@ from social.app.models.post import Post
 # Reference source: https://pypi.python.org/pypi/django-background-tasks
 @background(schedule=60)
 def get_github_activity(authorId):
+    print("entered")
     gitAuthor = Author.objects.get(id=authorId)
     gitUrl = gitAuthor.github
 
@@ -18,6 +19,7 @@ def get_github_activity(authorId):
     # TODO: Fix this so that it won't continue if given something like /user/repo
     # (although it won't cause an error if it receives a wrong input it's just something that bugs me)
     if(re.match(r'http(s)?:\/\/(www\.)?github\.com/[A-z 0-9 _ -]+\/?', gitUrl) is not None):
+        print("entered 2")
         if(gitUrl[-1:] == "/"):
             gitUrl = gitUrl[:-1]
         data = feedparser.parse(gitUrl + ".atom")

@@ -1,10 +1,11 @@
 import uuid
-
 import re
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 
+from datetime import datetime
 from social.app.models.node import Node
 
 class Author(models.Model):
@@ -105,7 +106,8 @@ def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
     if author.github != "":
-        get_github_activity(str(author.id))
+        time = datetime.now().replace(2018, 1, 1)
+        get_github_activity(str(author.id), repeat=60, repeat_until=time)
 
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)
