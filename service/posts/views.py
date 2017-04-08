@@ -50,13 +50,17 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return self.list(request, *args, **kwargs)
 
 
-class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+                           viewsets.GenericViewSet):
     """
-    list:
+    retrieve:
     Returns the local post with the specified ID, if any.
 
     If the local post has an attached image, and the current remote node has permission to view images, the post
     containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
+    
+    
+    
     """
     pagination_class = PostsPagination
     authentication_classes = (NodeBasicAuthentication,)
@@ -72,6 +76,9 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, views
         remote_node = self.request.user
 
         return get_local_posts(remote_node).filter(Q(id=post_id) | Q(parent_post__id=post_id))
+
+    def retrieve(self, request, *args, **kwargs):
+        return self.list(self, request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         """

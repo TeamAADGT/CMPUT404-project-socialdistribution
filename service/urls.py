@@ -49,7 +49,7 @@ service_urls = [
     url(r'^friendrequest/', service.friendrequest.views.friendrequest, name='friend-request'),
     url(r'^posts/$', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
     url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/$',
-        service.posts.views.SpecificPostsViewSet.as_view({'get': 'list', 'post': 'create'}),
+        service.posts.views.SpecificPostsViewSet.as_view({'get': 'retrieve', 'post': 'create'}),
         name='post-detail'),
 ]
 
