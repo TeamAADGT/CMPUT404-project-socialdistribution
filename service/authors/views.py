@@ -52,10 +52,13 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
                 {'detail': 'Author not found.'},
                 status=status.HTTP_404_NOT_FOUND)
 
-        return Response(
-            {"query": "friends",
-             "authors": AuthorURLSerializer(friends, context={'request': request}, many=True).data},
-            status=status.HTTP_200_OK)
+        author_urls = AuthorURLSerializer(friends, context={'request': request}, many=True).data
+        return Response({
+            "query": "friends",
+            "authors": [
+                author_url['url'] for author_url in author_urls
+            ]
+        }, status=status.HTTP_200_OK)
 
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def two_authors_are_friends(self, request, local_id=None, other_host_name=None, other_id=None):
@@ -65,8 +68,8 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 "query": "friends",
                 "error": "Author %s does not exist" % str(local_id),
-                "status": 404,
-            }, 404)
+                "status": status.HTTP_404_NOT_FOUND,
+            }, status.HTTP_404_NOT_FOUND)
 
         # Verify the friendship on our end
         is_friendship_record = Author.friends.through.objects.filter(
@@ -74,7 +77,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             to_author_id=other_id).exists()
         # Verify the requested to_author matches the given other_host_name
         is_remote_author_record = Author.objects.filter(id=other_id, node__host=other_host_name).exists()
-        
+
         is_friends = is_friendship_record and is_remote_author_record
 
         return Response({
