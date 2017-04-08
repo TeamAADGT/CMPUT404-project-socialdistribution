@@ -35,13 +35,18 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class FOAFCheckPostSerializer(serializers.Serializer):
-    query = serializers.CharField()
+    query = serializers.CharField(
+        help_text='The requested query to be performed. Must be equal to "getPost".',
+    )
     postid = serializers.UUIDField()
     url = serializers.HyperlinkedRelatedField(
         view_name="service:post-detail",
-        queryset=Post.objects.all()
+        queryset=Post.objects.all(),
+        help_text='The URI of the requested Post. Example: http://service/posts/{POST_ID} (required)'
     )
-    author = SimpleAuthorSerializer()
+    author = SimpleAuthorSerializer(
+
+    )
     friends = serializers.HyperlinkedRelatedField(
         view_name="service:author-detail",
         many=True,

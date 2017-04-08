@@ -57,9 +57,6 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, views
 
     If the local post has an attached image, and the current remote node has permission to view images, the post
     containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
-
-    create:
-
     """
     pagination_class = PostsPagination
     authentication_classes = (NodeBasicAuthentication,)
@@ -83,21 +80,27 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, views
         Expects input in the following format:
 
             {
-                "query":"getPost",
-                "postid":"{POST_ID}",
-                "url":"http://service/posts/{POST_ID}",
-                "author":{ # requestor
-                    # UUID
-                    "id":"http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
-                    "host":"http://127.0.0.1:5454/",
-                    "displayName":"Jerry Johnson",
-                    # url to the authors information
-                    "url":"http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
-                    # HATEOS
-                    "github": "http://github.com/jjohnson"
+                # The requested query. Must be set to "getPost". (required)
+                "query":"getPost", 
+                # The UUID of the requested Post. (required)
+                "postid":"{POST_ID}", 
+                # The URI of the requested Post. (required)
+                "url":"http://service/posts/{POST_ID}", 
+                # Information about the requesting Author. (required)
+                "author":{ 
+                    # The URI of the requesting author. (required)
+                    "id":"http://127.0.0.1:5454/service/author/de305d54-75b4-431b-adb2-eb6b9e546013", 
+                    # The base service URL of the requesting Author's local node. (required)
+                    "host":"http://127.0.0.1:5454/service/", 
+                    # The display name of the requesting Author. (optional)
+                    "displayName":"Jerry Johnson", 
+                    # The URI of the requesting author. (required)
+                    "url":"http://127.0.0.1:5454/service/author/de305d54-75b4-431b-adb2-eb6b9e546013", 
+                    # The URI of the requesting Author's Github profile. (optional)
+                    "github": "http://github.com/jjohnson" 
                 },
-                # friends of author
-                "friends":[
+                # The URIs of the requesting Author's friends. (required; may be empty)
+                "friends":[ 
                     "http://127.0.0.1:5454/author/7deee0684811f22b384ccb5991b2ca7e78abacde",
                     "http://127.0.0.1:5454/author/11c3783f15f7ade03430303573098f0d4d20797b",
                 ]
