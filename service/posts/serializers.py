@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from service.authors.serializers import SimpleAuthorSerializer
+from social.app.models.author import Author
 from social.app.models.post import Post
 
 
@@ -37,10 +38,12 @@ class FOAFCheckPostSerializer(serializers.Serializer):
     query = serializers.CharField()
     postid = serializers.UUIDField()
     url = serializers.HyperlinkedRelatedField(
-        view_name="service:post-detail"
+        view_name="service:post-detail",
+        queryset=Post.objects.all()
     )
     author = SimpleAuthorSerializer()
     friends = serializers.HyperlinkedRelatedField(
         view_name="service:author-detail",
-        many=True
+        many=True,
+        queryset=Author.objects.all()
     )

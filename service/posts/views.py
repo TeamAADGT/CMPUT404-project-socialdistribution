@@ -43,25 +43,29 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         return get_local_posts(remote_node)
 
-    @list_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,), permission_classes=(IsAuthenticated,))
+    @list_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,),
+                permission_classes=(IsAuthenticated,))
     def all_posts(self, request, *args, **kwargs):
         # Needed to make sure this shows up in the schema -- collides with /posts/ otherwise
         return self.list(request, *args, **kwargs)
 
 
-class SpecificPostsView(generics.ListCreateAPIView):
+class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
+    list:
     Returns the local post with the specified ID, if any.
-    
+
     If the local post has an attached image, and the current remote node has permission to view images, the post
     containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
+
+    create:
+
     """
     pagination_class = PostsPagination
-    serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    def get_serializer(self, *args, **kwargs):
+    def get_serializer_class(self):
         if self.request.method == 'GET':
             return PostSerializer
         return FOAFCheckPostSerializer
@@ -74,20 +78,39 @@ class SpecificPostsView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         """
-        Overrides what response to a POST, but we're not actually creating.
+        Checking whether the requesting author can see this FOAF post or not.
+
+        Expects input in the following format:
+
+            {
+                "query":"getPost",
+                "postid":"{POST_ID}",
+                "url":"http://service/posts/{POST_ID}",
+                "author":{ # requestor
+                    # UUID
+                    "id":"http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
+                    "host":"http://127.0.0.1:5454/",
+                    "displayName":"Jerry Johnson",
+                    # url to the authors information
+                    "url":"http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
+                    # HATEOS
+                    "github": "http://github.com/jjohnson"
+                },
+                # friends of author
+                "friends":[
+                    "http://127.0.0.1:5454/author/7deee0684811f22b384ccb5991b2ca7e78abacde",
+                    "http://127.0.0.1:5454/author/11c3783f15f7ade03430303573098f0d4d20797b",
+                ]
+            }
         
-        Instead we're checking whether the requesting author can see this FOAF post or not.
-        
-        Source: https://github.com/encode/django-rest-framework/blob/master/rest_framework/mixins.py#L18 (2017-04-07)
         """
+        # Source: https://github.com/encode/django-rest-framework/blob/master/rest_framework/mixins.py#L18 (2017-04-07)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-
-
         headers = self.get_success_headers(serializer.data)
         response_data = {}
-        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(response_data, status=status.HTTP_200_OK, headers=headers)
 
 
 class AuthorPostsView(generics.ListAPIView):
