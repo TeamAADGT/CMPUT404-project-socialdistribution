@@ -1,4 +1,9 @@
-<h4>{{ post.author.displayName }}</h4>
+<h4 class="">
+    <a class="" href="{% url 'app:authors:detail' post.author.id %}">
+        {{ post.author.displayName }}
+    </a>
+</h4>
+
 <small class="sd-post-info">{{ post.published }}</small>
 {% if post.categories_string %}
     <small class="sd-post-info">Categories: {{ post.categories_string }}</small>
