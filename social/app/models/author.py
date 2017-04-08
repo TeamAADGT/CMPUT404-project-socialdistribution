@@ -103,13 +103,11 @@ def create_profile(sender, **kwargs):
 
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
-    user = kwargs["instance"]
-    if not user.is_staff:
-        user_profile = Author(user=user)
-        if user_profile.github != "":
-            get_github_activity(user_profile.id)
+    author = kwargs["instance"]
+    if author.github != "":
+        get_github_activity(str(author.id))
 
 post_save.connect(create_profile, sender=User)
-post_save.connect(update_profile, sender=User)
+post_save.connect(update_profile, sender=Author)
 
 User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0])

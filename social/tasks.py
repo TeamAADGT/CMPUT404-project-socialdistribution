@@ -16,11 +16,11 @@ def get_github_activity(authorId):
     # Using RegEx to check if it's a proper URL
     # Reference source: https://github.com/lorey/social-media-profiles-regexs#github
     # TODO: Fix this so that it won't continue if given something like /user/repo
-    if(r'http(s)?:\/\/(www\.)?github\.com/[A-z 0-9 _ -]+\/?$'):
+    # (although it won't cause an error if it receives a wrong input it's just something that bugs me)
+    if(re.match(r'http(s)?:\/\/(www\.)?github\.com/[A-z 0-9 _ -]+\/?', gitUrl) is not None):
+        if(gitUrl[-1:] == "/"):
+            gitUrl = gitUrl[:-1]
         data = feedparser.parse(gitUrl + ".atom")
-
-        # get users post
-        posts = Post.objects.filter(author__id=authorId).filter(title__contains="New GitHub Activity:")
 
         # Get encoding to decode the data
         encoding = data["encoding"]
