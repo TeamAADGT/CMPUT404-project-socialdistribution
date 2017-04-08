@@ -83,6 +83,13 @@ class Post(models.Model):
 
     unlisted = models.BooleanField(default=False)
 
+    child_post = models.OneToOneField(
+        to='Post',
+        null=True,
+        blank=True,
+        related_name='parent_post',
+        on_delete=models.SET_NULL
+    )
 
     def get_absolute_url(self):
         return reverse('app:posts:detail', kwargs={'pk': self.id})
@@ -117,7 +124,12 @@ class Post(models.Model):
         return self.is_file() or self.is_image()
 
     def upload_url(self):
-        return reverse('app:posts:upload-view', kwargs={'pk': self.id})
+        if self.is_image():
+            return "data:%s,%s" % (self.content_type, self.content)
+        elif self.child_post:
+            return self.child_post.upload_url()
+        else:
+            return ""
 
 
 def keys(tuple_list):

@@ -1,22 +1,50 @@
-from rest_framework import viewsets, status
+import uuid
+
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import viewsets, status, generics
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from service.authentication.node_basic import NodeBasicAuthentication
 from service.authors.serializers import AuthorSerializer, AuthorURLSerializer
 from social.app.models.author import Author
 
 
-class AuthorViewSet(viewsets.ModelViewSet):
+class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows for the retrieval and modification of Authors.
+    """
+
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
+    authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
-    def friends(self, request, pk=None):
+    def author_friends(self, request, pk=None):
+        """
+        Returns a (possibly empty) list of  Authors that are friends with the user specified by id.
+        
+        Example successful response:
+        
+            {
+                "query":"friends",
+                "authors":[
+                    "http://host3/author/de305d54-75b4-431b-adb2-eb6b9e546013",
+                    "http://host2/author/ae345d54-75b4-431b-adb2-fb6b9e547891"
+                ]
+            }
+        
+        Example failed response:
+        
+            {
+                "detail": "Author not found."
+            }
+        """
         try:
             friends = self.get_object().friends.all()
         except Author.DoesNotExist:
@@ -24,113 +52,39 @@ class AuthorViewSet(viewsets.ModelViewSet):
                 {'detail': 'Author not found.'},
                 status=status.HTTP_404_NOT_FOUND)
 
-        return Response(
-            {"query": "friends",
-             "authors": AuthorURLSerializer(friends, context={'request': request}, many=True).data},
-            status=status.HTTP_200_OK)
+        author_urls = AuthorURLSerializer(friends, context={'request': request}, many=True).data
+        return Response({
+            "query": "friends",
+            "authors": [
+                author_url['url'] for author_url in author_urls
+            ]
+        }, status=status.HTTP_200_OK)
 
-    @detail_route(methods=["POST"], authentication_classes=(SessionAuthentication,))
-    def follow(self, request, pk=None):
-
-        follower = request.user.profile
-
-        if not follower.activated:
-            return Response(
-                {"detail": "Unactivated authors cannot follow other authors."},
-                status=status.HTTP_403_FORBIDDEN)
-
+    @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
+    def two_authors_are_friends(self, request, local_id=None, other_host_name=None, other_id=None):
         try:
-            followee = Author.objects.get(id=pk)
-        except Author.DoesNotExist:
-            return Response(
-                {'detail': 'The author you wanted to follow could not be found.'},
-                status=status.HTTP_404_NOT_FOUND)
+            local_author = Author.objects.get(id=local_id)
+        except ObjectDoesNotExist, e:
+            return Response({
+                "query": "friends",
+                "error": "Author %s does not exist" % str(local_id),
+                "status": status.HTTP_404_NOT_FOUND,
+            }, status.HTTP_404_NOT_FOUND)
 
-        # Does this author already follow followee?
-        if follower.followed_authors.filter(id=followee.id):
-            return Response(
-                {"detail": "You already follow this author."},
-                status=status.HTTP_403_FORBIDDEN)
+        # Verify the friendship on our end
+        is_friendship_record = Author.friends.through.objects.filter(
+            from_author_id=local_id,
+            to_author_id=other_id).exists()
+        # Verify the requested to_author matches the given other_host_name
+        is_remote_author_record = Author.objects.filter(id=other_id, node__host=other_host_name).exists()
 
-        if not followee.activated:
-            return Response(
-                {"detail": "Unactivated authors cannot be followed."},
-                status=status.HTTP_403_FORBIDDEN)
+        is_friends = is_friendship_record and is_remote_author_record
 
-        follower.followed_authors.add(followee)
-
-        return Response(
-            {"followed_author": reverse("service:author-detail", kwargs={'pk': followee.id}, request=request)},
-            status=status.HTTP_200_OK)
-
-    @detail_route(methods=["POST"], authentication_classes=(SessionAuthentication,))
-    def unfollow(self, request, pk=None):
-
-        unfollower = request.user.profile
-
-        if not unfollower.activated:
-            return Response(
-                {"detail": "Unactivated authors cannot unfollow other authors."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            followee = Author.objects.get(id=pk)
-        except Author.DoesNotExist:
-            return Response(
-                {'detail': 'The author you wanted to unfollow could not be found.'},
-                status=status.HTTP_404_NOT_FOUND)
-
-        if not followee.activated:
-            return Response(
-                {"detail": "Unactivated authors cannot be unfollowed."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        # Does this author already not follow followee?
-        if not unfollower.followed_authors.filter(id=followee.id):
-            return Response(
-                {"detail": "You already do not follow this author."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        unfollower.followed_authors.remove(followee)
-
-        return Response(
-            {"unfollowed_author": reverse("service:author-detail", kwargs={'pk': followee.id}, request=request)},
-            status=status.HTTP_200_OK)
-
-    @detail_route(methods=["POST"], authentication_classes=(SessionAuthentication,))
-    def friendrequest(self, request, pk=None):
-
-        current_author = request.user.profile
-
-        if not current_author.activated:
-            return Response(
-                {"detail": "Unactivated authors cannot friend request other authors."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            target = Author.objects.get(id=pk)
-        except Author.DoesNotExist:
-            return Response(
-                {'detail': 'The author you wanted to friend request could not be found.'},
-                status=status.HTTP_404_NOT_FOUND)
-
-        if current_author.friends.filter(id=target.id):
-            return Response(
-                {"detail": "You are already friends with this author."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        if current_author.outgoing_friend_requests.filter(id=target.id):
-            return Response(
-                {"detail": "You already have a pending friend request with this author."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        if not target.activated:
-            return Response(
-                {"detail": "Unactivated authors cannot be friend requested."},
-                status=status.HTTP_403_FORBIDDEN)
-
-        current_author.add_friend_request(target)
-
-        return Response(
-            {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
-            status=status.HTTP_200_OK)
+        return Response({
+            "query": "friends",
+            "authors": [
+                local_author.get_uri(),
+                Author.get_uri_from_host_and_uuid(other_host_name, other_id)
+            ],
+            "friends": is_friends,
+        })
