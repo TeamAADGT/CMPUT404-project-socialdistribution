@@ -23,7 +23,7 @@ class Comment(models.Model):
         verbose_name="author of the comment",
     )
 
-    text = models.TextField()
+    comment = models.TextField()
     published = models.DateTimeField(auto_now_add=True)
 
     class Meta:
