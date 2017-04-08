@@ -98,6 +98,7 @@ class Author(models.Model):
         match = re.match(r'^(?P<host>(http(s)?//(.+)/))author/(?P<pk>[0-9a-fA-F-]+)', uri)
         return match.group('host'), uuid.UUID(match.group('pk'))
 
+
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
     if not user.is_staff and kwargs["created"]:
@@ -105,7 +106,6 @@ def create_profile(sender, **kwargs):
         user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
-
 
 post_save.connect(create_profile, sender=User)
 

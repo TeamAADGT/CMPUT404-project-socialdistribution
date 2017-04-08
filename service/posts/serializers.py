@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from service.authors.serializers import SimpleAuthorSerializer, UnknownAuthorSerializer
-from social.app.models.author import Author
 from social.app.models.post import Post
 
 

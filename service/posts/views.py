@@ -70,9 +70,9 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
     permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return PostSerializer
-        return FOAFCheckPostSerializer
+        if self.action == 'create':
+            return FOAFCheckPostSerializer
+        return PostSerializer
 
     def get_queryset(self):
         post_id = self.kwargs["pk"]
@@ -131,7 +131,7 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
             return Response({"detail": "You can't request a Post for an Author that's not local to yourself."},
                             status=status.HTTP_403_FORBIDDEN)
         try:
-            post = Post.objects.get(id=data["postid"], node__local=True)
+            post = Post.objects.get(id=data["postid"], author__node__local=True)
         except Post.DoesNotExist:
             return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -141,8 +141,11 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
         requesting_author_id = Author.get_id_from_uri(author_dict["id"])
         try:
-            requesting_author = remote_node.create_or_update_remote_author(requesting_author_id)
-        except requests.exceptions.RequestException:
+            if remote_node.local:
+                requesting_author = Author.objects.get(id=requesting_author_id)
+            else:
+                requesting_author = remote_node.create_or_update_remote_author(requesting_author_id)
+        except Author.DoesNotExist, requests.exceptions.RequestException:
             return Response({"detail": "Error retrieving remote Author."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return_post = False
@@ -151,6 +154,11 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
         if post.author.friends_with(requesting_author):
             return_post = True
+        elif remote_node.local:
+            for friend in post.author.friends:
+                if requesting_author.friends_with(friend):
+                    return_post = True
+                    break
         else:
             # Need to first verify with requesting_author's node, according to spec
             for author_uri in author_dict["friends"]:
@@ -173,16 +181,19 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
                     # So now we just check if we agree locally
 
                     requester_friend = Author.objects.get(id=requester_friend_id)
-                    return_post = post.author.friends_with(requester_friend) \
-                                  and requester_friend.friends_with(requesting_author)
+                    return_post = \
+                        post.author.friends_with(requester_friend) \
+                        and requester_friend.friends_with(requesting_author)
+
                 elif requester_friend_node == requesting_author.node:
                     # The requester and the friend in the middle are from the same non-local node
 
                     requester_friend = requester_friend_node.create_or_update_remote_author(requester_friend_id)
 
-                    return_post = post.author.friends_with(requester_friend) \
-                                  and requester_friend_node.get_if_two_authors_are_friends(requester_friend.id,
-                                                                                           post.author_id)
+                    return_post = \
+                        post.author.friends_with(requester_friend) \
+                        and requester_friend_node.get_if_two_authors_are_friends(requester_friend.id,
+                                                                                 post.author_id)
                 else:
                     # The requester and the friend in the middle are from different non-local nodes
                     requester_friend = requester_friend_node.create_or_update_remote_author(requester_friend_id)
@@ -194,12 +205,10 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
                                                                                  requesting_author.author_id)
 
         if return_post:
-            # Do stuff
-            pass
-
-        headers = self.get_success_headers(serializer.data)
-        response_data = {}
-        return Response(response_data, status=status.HTTP_200_OK, headers=headers)
+            return self.retrieve(request, *args, **kwargs)
+        else:
+            return Response({"detail": "The requested Author is not permitted to view this Post."},
+                            status=status.HTTP_403_FORBIDDEN)
 
 
 class AuthorPostsView(generics.ListAPIView):

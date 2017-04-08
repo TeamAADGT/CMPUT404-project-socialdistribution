@@ -1,13 +1,8 @@
-import json
-import re
 import logging
 
 import requests
 from django.db import models
 from django.db.models.signals import post_save
-import logging
-
-from social.app.models.author import Author
 
 
 class Node(models.Model):
@@ -41,6 +36,7 @@ class Node(models.Model):
         return requests.get(url, auth=(self.username, self.password)).json()
 
     def get_if_authors_are_friends(self, first_author_id, second_author_uri):
+        from social.app.models.author import Author
         (second_author_host, second_author_id) = Author.parse_uri(second_author_uri)
         second_author_host = second_author_host.replace('http://', '', 1).replace('https://', '', 1)
 
