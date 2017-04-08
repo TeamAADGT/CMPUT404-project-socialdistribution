@@ -94,6 +94,24 @@ class Author(models.Model):
         match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
         return match.group('pk')
 
+    def get_uri(self):
+        return Author.get_uri_from_host_and_uuid(self.node.host, self.id)
+
+    # This method cannot have the same name as get_uri as overloading
+    # attributes is not directly supported in Python
+    @staticmethod
+    def get_uri_from_host_and_uuid(host_url, id):
+        if host_url[:-1] != '/':
+            host_url += '/'
+
+        if type(id) is not uuid.UUID:
+            id = uuid.UUID(id)
+
+        if host_url.startswith("http") is False:
+            host_url = "http://" + host_url
+
+        return host_url + 'author/' + str(id)
+
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
