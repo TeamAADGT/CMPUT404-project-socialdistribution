@@ -25,6 +25,7 @@
 <script src="{% static 'js/jquery.shorten.min.js' %}"></script>
 <script src="{% static 'js/js.cookie.js' %}"></script>
 <script src="{% static 'js/ajax.csrf.js' %}"></script>
+<script src="{% static 'js/site.js' %}"></script>
 <script>
     $('.grid').masonry({
         itemSelector: '.grid-item',
@@ -33,22 +34,7 @@
     });
 </script>
 
-<script>
-    $(document).ready(function () {
-        $(".sd-comment-text").shorten({
-            moreText: 'Read more',
-            lessText: 'Read less'
-        });
-
-        $(".sd-comment-text-small").shorten({showChars: 10});
-
-    });
-</script>
-
 {% block javascripts %}
-{% endblock %}
-
-{% block javascript_visible_to %}
 {% endblock %}
 
 </body>

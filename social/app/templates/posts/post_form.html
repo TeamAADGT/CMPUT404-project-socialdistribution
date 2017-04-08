@@ -39,26 +39,4 @@
     </div>
 {% endblock %}
 
-{# Show visible to list only when private is selected #}
-{% block javascript_visible_to %}
-    <script>
-        $("#id_visible_to").parent(".form-group").css("display", "none");
-
-        $("select#id_visibility")
-            .change(function () {
-                var str = "";
-                $("select#id_visibility option:selected").each(function () {
-                    str += $(this).text();
-                    if (str === "Private") {
-                        $("#id_visible_to").parent(".form-group").show("slow");
-                    }
-                    else {
-                        $("#id_visible_to").parent(".form-group").css("display", "none");
-                    }
-                });
-            })
-            .change();
-    </script>
-{% endblock %}
-
 
