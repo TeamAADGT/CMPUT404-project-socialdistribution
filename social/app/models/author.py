@@ -112,6 +112,9 @@ def update_profile(sender, **kwargs):
         get_github_activity(str(author.id), repeat=60, repeat_until=time)
         author.has_github_task = True
         author.save()
+    elif author.github == "" and author.has_github_task:
+        author.has_github_task = False
+        author.save()
 
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)
