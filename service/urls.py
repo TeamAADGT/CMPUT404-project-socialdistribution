@@ -21,7 +21,10 @@ author_urls = [
         service.posts.views.AuthorPostsView.as_view(),
         name='author-posts-list'),
     url(r'^(?P<pk>[0-9a-fA-F-]+)/friends/$',
-        service.authors.views.AuthorViewSet.as_view({'get': 'author_friends'}),
+        service.authors.views.AuthorViewSet.as_view({
+            'get': 'author_friends',
+            'post': 'author_friends_search'
+        }),
         name='author-friends-list'),
     url(r'^(?P<local_id>[0-9a-fA-F-]+)/friends/(?P<other_host_name>[^/]+)/author/(?P<other_id>[0-9a-fA-F-]+)/$',
         service.authors.views.AuthorViewSet.as_view({'get': 'two_authors_are_friends'}),
