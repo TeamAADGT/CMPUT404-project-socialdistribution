@@ -1,8 +1,11 @@
-{% if post.is_text %}
 <div class="sd-post-story-container">
     {% if post.title %}
         <h2 class="sd-post-title">
-            <a target="_blank" href="{% url 'app:posts:detail' post.id %}">{{ post.title }}</a>
+            {% if post.get_absolute_url == request.get_full_path %}
+                {{ post.title }}
+            {% else %}
+                <a target="_blank" href="{% url 'app:posts:detail' post.id %}">{{ post.title }}</a>
+            {% endif %}
         </h2>
     {% endif %}
     {% if post.description %}
@@ -24,17 +27,11 @@
             {{ post.content_html | safe }}
         {% endif %}
     </div>
+    {% if post.child_post and post.child_post.is_image %}
+        <div class="sd-post-upload">
+            <img class="img-responsive img-rounded"
+                 src="{{ post.upload_url }}"
+                 alt="Post picture">
+        </div>
+    {% endif %}
 </div>
-{% elif post.is_image %}
-    <div class="sd-post-media-container sd-margin-top-20">
-        <img class="img-responsive img-rounded"
-             src="{{ post.upload_url }}"
-             alt="Post picture">
-    </div>
-{% elif post.is_file %}
-    <div class="sd-post-media-container sd-margin-top-20">
-        <a href="{{ post.upload_url }}" target="_blank">
-            Right-click > Save this link to download the file.
-        </a>
-    </div>
-{% endif %}

@@ -1,9 +1,20 @@
-from rest_framework import models
 from rest_framework import serializers
 
-from service.nodes.serializers import SimpleNodeSerializer
 from social.app.models.author import Author
-from social.app.models.node import Node
+
+
+class UnknownAuthorSerializer(serializers.Serializer):
+    """
+    Used in input cases where we don't necessarily know about a remote Author yet, so it doesn't make sense
+    to use a ModelSerializer
+    """
+    id = serializers.URLField()
+    host = serializers.URLField()
+    url = serializers.URLField()
+    github = serializers.URLField(
+        required=False,
+        allow_blank=True
+    )
 
 
 class AuthorURLSerializer(serializers.ModelSerializer):

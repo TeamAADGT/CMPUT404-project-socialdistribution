@@ -1,10 +1,11 @@
 import json
 import re
+import logging
 
 import requests
 from django.db import models
 from django.db.models.signals import post_save
-
+import logging
 
 class Node(models.Model):
     """
@@ -18,7 +19,7 @@ class Node(models.Model):
     username = models.CharField(blank=True, max_length=512)
     password = models.CharField(blank=True, max_length=512)
 
-    requires_auth = models.BooleanField(default=True)
+    requires_auth = models.BooleanField(default=True) # TODO: remove this attribute
     share_images = models.BooleanField(default=True)
     share_posts = models.BooleanField(default=True)
 
@@ -37,12 +38,36 @@ class Node(models.Model):
         return requests.get(url, auth=(self.username, self.password)).json()
 
     def get_author_posts(self):
-        url = self.service_url + "author/posts"
-        return requests.get(url, auth=(self.username, self.password)).json()
+        url = self.service_url + "author/posts/"
+        response = requests.get(url, auth=(self.username, self.password)).json()
+        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
+            return response
+        else:
+            logging.warn(
+                "%s did not conform to the expected response format! Returning an empty list of posts!"
+                % url)
+            return []
+
+    @classmethod
+    def get_host_from_uri(cls, uri):
+        p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
+        m = re.search(p, uri)
+        return m.group('host')
 
     def get_public_posts(self):
-        url = self.service_url + "posts"
-        return requests.get(url, auth=(self.username, self.password)).json()
+        url = self.service_url + "posts/"
+        response = requests.get(url, auth=(self.username, self.password)).json()
+        return response
+        """
+        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
+            return response
+        else:
+            logging.warn(
+                "%s did not conform to the expected response format! Returning an empty list of posts!"
+                % url)
+            return []
+        """
+
 
     def create_or_update_remote_author(self, uuid):
         json = self.get_author(uuid).json()

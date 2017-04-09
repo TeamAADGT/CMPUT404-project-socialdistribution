@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'service.apps.ApiConfig',
     'rest_framework_swagger',
+    'background_task',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -78,6 +79,15 @@ TEMPLATES = [
             'debug': DEBUG,
         },
     },
+    {
+        'BACKEND': 'django.template.backends.jinja2.Jinja2',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'environment': 'social.jinja2.environment',
+        },
+    },
+
 ]
 
 WSGI_APPLICATION = 'social.wsgi.application'
@@ -158,7 +168,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 APPEND_SLASH = True
 
 LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = '/posts/'
+LOGIN_REDIRECT_URL = '/'
 
 REGISTRATION_OPEN = True
 

@@ -17,7 +17,7 @@ class AuthorFriendRequestTestCase(APITestCase):
         self.author = user1.profile
         self.target = user2.profile
 
-        self.url = reverse("service:author-friendrequest", args=[self.target.id])
+        self.url = reverse("service:internal:author-friendrequest", args=[self.target.id])
 
     def test_requesting_without_session_auth_fails(self):
         response = self.client.post(self.url)
