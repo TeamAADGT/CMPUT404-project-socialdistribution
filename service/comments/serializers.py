@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-from service.authors.serializers import UnknownAuthorSerializer
+from service.authors.serializers import UnknownAuthorSerializer, SimpleAuthorSerializer
 from social.app.models.comment import Comment
 from social.app.models.post import Post
 from social.app.models.post import Author
@@ -11,10 +11,7 @@ from social.app.models.node import Node
 
 # For viewing comments at API endpoint
 class CommentSerializer(serializers.HyperlinkedModelSerializer):
-    author = serializers.HyperlinkedRelatedField(
-        view_name="service:author-detail",
-        read_only=True,
-    )
+    author = SimpleAuthorSerializer()
     contentType = serializers.CharField(default="text/markdown")
 
     class Meta:
@@ -64,11 +61,11 @@ class CreateCommentSerializer(serializers.Serializer):
             # We do not allow anonymous comments
             raise ValidationError('You do not have permission to comment on that post')
 
-        else: # We trust this node, so allow them to comment on this post IF the remote author has permission to view
+        else:  # We trust this node, so allow them to comment on this post IF the remote author has permission to view
             # that post.
             queryset = Post.objects.filter(id=post_id)
-            queryset = queryset.filter(author__node__local=True) # post must be local
-            queryset = queryset.exclude(visibility="SERVERONLY") # post must not be local only
+            queryset = queryset.filter(author__node__local=True)  # post must be local
+            queryset = queryset.exclude(visibility="SERVERONLY")  # post must not be local only
 
             if post.visibility == "PUBLIC" and queryset:
                 return value
@@ -136,7 +133,3 @@ class CreateCommentSerializer(serializers.Serializer):
 
         comment = get_object_or_404(Comment, pk=comment_id)
         return comment
-
-
-
-
