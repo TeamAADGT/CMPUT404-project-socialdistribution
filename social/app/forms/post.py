@@ -1,9 +1,10 @@
-import base64
+import base64, uuid
 
 from django import forms
 
 from social.app.models.category import Category
 from social.app.models.post import Post
+from social.app.models.author import Author
 
 
 class PostForm(forms.ModelForm):
@@ -11,6 +12,13 @@ class PostForm(forms.ModelForm):
         label="Categories",
         required=False,
         help_text="Space-delimited",
+    )
+
+    visible_to = forms.CharField(
+        label="Visible to",
+        required=False,
+        help_text="New line",
+        widget=forms.Textarea,
     )
 
     content_type = forms.ChoiceField(choices=Post.TEXT_CONTENT_TYPES)
@@ -40,6 +48,8 @@ class PostForm(forms.ModelForm):
             instance.origin = url
 
         self.save_categories(instance, commit)
+
+        self.save_visible_to(instance, commit)
 
         delete_child = False
 
@@ -88,6 +98,20 @@ class PostForm(forms.ModelForm):
 
                     instance.categories.add(category)
 
+    def save_visible_to(self, instance, commit=True):
+        authors_uris_string = self.cleaned_data["visible_to"]
+
+        if authors_uris_string:
+            for author_uri_string in authors_uris_string.split('\n'):
+                author_uuid = Author.get_id_from_uri(author_uri_string)
+                author_uuid = uuid.UUID(author_uuid)
+
+                if not instance.visible_to.filter(id=author_uuid).exists():
+                    author, created = Author.objects.get_or_create(id=author_uuid)
+                    self.cleaned_data["visible_to"] = author_uuid
+
+                    instance.visible_to.add(author)
+
     # Source:
     # https://docs.djangoproject.com/en/1.10/ref/forms/validation/#cleaning-and-validating-fields-that-depend-on-each-other
     def clean(self):
@@ -113,5 +137,4 @@ class PostForm(forms.ModelForm):
 
     class Meta:
         model = Post
-        fields = ["title", "description", "content_type", "content", "visibility", "visible_to",
-                  "unlisted"]
+        fields = ["title", "description", "content_type", "content", "visibility", "unlisted"]

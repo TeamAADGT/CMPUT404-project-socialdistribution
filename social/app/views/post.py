@@ -15,8 +15,7 @@ from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
-from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
-
+from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts, get_all_private_posts
 
 def all_posts(request):
     """
@@ -43,6 +42,7 @@ def my_stream_posts(request):
     if request.user.is_authenticated():
 
         user = request.user
+
         author = Author.objects.get(user=request.user.id)
 
         # Case V: Get other node posts
@@ -69,11 +69,15 @@ def my_stream_posts(request):
             .filter(~Q(author__id=user.profile.id)) \
             .filter(author__id__in=author.followed_authors.all())
 
-        # TODO: case IV: posts.visibility=private
+        # case IV: posts.visibility=private
+        private_posts = get_all_private_posts() \
+            .filter(Q(visible_to=user.profile.id))
+
 
         posts = ((public_and_following_posts |
                   friend_posts |
-                  foaf_posts)
+                  foaf_posts |
+                  private_posts)
                  .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
                  .distinct())
 
@@ -111,6 +115,7 @@ def post_create(request):
         raise Http404
 
     form = PostForm(request.POST or None, request.FILES or None)
+
     if form.is_valid():
         instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
@@ -118,7 +123,7 @@ def post_create(request):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form2.html", context)
+    return render(request, "posts/post_form.html", context)
 
 
 # Delete a particular post
