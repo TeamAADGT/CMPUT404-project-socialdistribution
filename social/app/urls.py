@@ -36,6 +36,7 @@ authors_urlpatterns = [
     url(r'^(?P<pk>[0-9a-z\\-]+)$', author_views.AuthorDetailView.as_view(), name='detail'),
     # /authors/aeea8619-a9c1-4792-a273-80ccb7255ea2/posts/
     url(r'^(?P<pk>[0-9a-z\\-]+)/posts/$', author_views.get_posts_by_author, name='posts-by-author'),
+    url(r'^find-remote/', author_views.find_remote_author, name='find-remote')
 ]
 
 urlpatterns = [

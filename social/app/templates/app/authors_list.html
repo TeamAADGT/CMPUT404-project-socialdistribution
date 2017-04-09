@@ -3,6 +3,12 @@
 
 {% block content %}
     <h1 class="text-center">Authors</h1>
+    {% if show_remote_find_link %}
+        <section>
+            <a href="{% url 'app:authors:find-remote' %}">Find Remote Author</a>
+        </section>
+    {% endif %}
+
     <ul class="media-list">
         {% for author in all_authors %}
             <li id="sd-author-{{ author.id }}" class="media sd-author">
