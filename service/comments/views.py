@@ -11,6 +11,10 @@ from service.comments.serializers import CommentSerializer, CreateCommentSeriali
 
 # /service/posts/{id}/comments/ (both GET and POST)
 class CommentListView(generics.ListCreateAPIView):
+    """
+    test</br>
+    1234
+    """
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination
 
