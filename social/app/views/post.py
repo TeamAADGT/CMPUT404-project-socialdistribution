@@ -118,7 +118,7 @@ def post_create(request):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form2.html", context)
+    return render(request, "posts/post_form.html", context)
 
 
 # Delete a particular post
@@ -156,7 +156,10 @@ def post_update(request, pk):
 
     form = PostForm(request.POST or None, request.FILES or None,
                     instance=post,
-                    initial={'upload_content_type': post.child_post.content_type if post.child_post else ""})
+                    initial={
+                        'upload_content_type': post.child_post.content_type if post.child_post else "",
+                        'categories': post.categories_string()
+                    })
 
     if form.is_valid():
         instance = form.save(request=request)

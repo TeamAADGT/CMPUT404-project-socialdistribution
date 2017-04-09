@@ -77,6 +77,8 @@ class PostForm(forms.ModelForm):
         return instance
 
     def save_categories(self, instance, commit=True):
+        instance.categories.clear()
+
         categories_string = self.cleaned_data["categories"]
         if categories_string:
             for name in categories_string.split(" "):
