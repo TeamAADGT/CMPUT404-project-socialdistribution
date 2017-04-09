@@ -1,7 +1,11 @@
 <div class="sd-post-story-container">
     {% if post.title %}
         <h2 class="sd-post-title">
-            <a target="_blank" href="{% url 'app:posts:detail' post.id %}">{{ post.title }}</a>
+            {% if post.get_absolute_url == request.get_full_path %}
+                {{ post.title }}
+            {% else %}
+                <a target="_blank" href="{% url 'app:posts:detail' post.id %}">{{ post.title }}</a>
+            {% endif %}
         </h2>
     {% endif %}
     {% if post.description %}

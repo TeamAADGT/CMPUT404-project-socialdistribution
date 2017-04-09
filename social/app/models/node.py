@@ -19,7 +19,7 @@ class Node(models.Model):
     username = models.CharField(blank=True, max_length=512)
     password = models.CharField(blank=True, max_length=512)
 
-    requires_auth = models.BooleanField(default=True)
+    requires_auth = models.BooleanField(default=True) # TODO: remove this attribute
     share_images = models.BooleanField(default=True)
     share_posts = models.BooleanField(default=True)
 
@@ -48,11 +48,17 @@ class Node(models.Model):
                 % url)
             return []
 
+    @classmethod
+    def get_host_from_uri(cls, uri):
+        p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
+        m = re.search(p, uri)
+        return m.group('host')
+
     def get_public_posts(self):
         url = self.service_url + "posts/"
         response = requests.get(url, auth=(self.username, self.password)).json()
-        # Note: uncomment out following line to test with current "Coolbears" node if you want to test remote post results
-        # return response
+        return response
+        """
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
             return response
         else:
@@ -60,6 +66,7 @@ class Node(models.Model):
                 "%s did not conform to the expected response format! Returning an empty list of posts!"
                 % url)
             return []
+        """
 
 
     def create_or_update_remote_author(self, uuid):

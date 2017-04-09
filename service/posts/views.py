@@ -1,4 +1,3 @@
-from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
 from rest_framework import viewsets, views, generics, mixins
 from rest_framework.decorators import list_route

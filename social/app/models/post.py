@@ -2,7 +2,6 @@ import re
 import uuid, logging
 
 import CommonMark
-from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.db.models import Q
@@ -45,6 +44,7 @@ class Post(models.Model):
     source = models.URLField()
     origin = models.URLField()
     description = models.TextField()
+    github_id = models.TextField(default="")
 
     content_type = models.CharField(
         max_length=20,
@@ -130,6 +130,14 @@ class Post(models.Model):
         else:
             return ""
 
+    def visible_to_remote_author(self, remote_author_id):
+        return len(self.visible_to.filter(author_id=remote_author_id)) > 0
+
+    @classmethod
+    def get_id_from_uri(cls, uri):
+        match = re.match(r'^(.+)//(.+)/posts/(?P<pk>[0-9a-z\\-]+)', uri)
+        return match.group('pk')
+
 
 def keys(tuple_list):
     """
@@ -165,18 +173,31 @@ def get_all_foaf_posts(author):
         .filter(Q(author__id__in=foafs)) \
         .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
 
+def get_all_private_posts():
+    return Post.objects \
+        .filter(Q(visibility="PRIVATE")) \
+        .order_by('-published')
+
 
 # This gets all remote posts from:
 # /service/posts
 # TODO: need to query remote author to grab their friends?
-# TODO: need to save post comments too?
+# TODO: we are not currently pulling in posts from our clone. Need to debug this
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
         try:
-            for post_json in node.get_public_posts()['posts']:
+            some_json = node.get_public_posts()
+            for post_json in some_json['posts']:
                 author_json = post_json['author']
-                remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+
+                # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
+                if 'http' in author_json['id']:
+                    remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                else:
+                    remote_author_id = uuid.UUID(author_json['id'])
+
+                # Add remote author to DB
                 author, created = Author.objects.update_or_create(
                     id=remote_author_id,
                     defaults={
@@ -184,8 +205,14 @@ def get_remote_node_posts():
                         'displayName': author_json['displayName'],
                     }
                 )
+                if 'http' in post_json['id']:
+                    post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
+                else:
+                    post_id = uuid.UUID(post_json['id'])
+
+                # Add remote post to DB
                 post, created = Post.objects.update_or_create(
-                    id=uuid.UUID(post_json['id']),
+                    id=post_id,
                     defaults={
                         'title': post_json['title'],
                         'source': post_json['source'],
@@ -198,6 +225,7 @@ def get_remote_node_posts():
                     }
                 )
                 node_posts.append(post)
+
         except Exception, e:
             logging.error(e)
             logging.warn('Skipping a post retrieved from ' + node.host)
