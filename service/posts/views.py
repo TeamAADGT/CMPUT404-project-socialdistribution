@@ -61,9 +61,6 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
     If the local post has an attached image, and the current remote node has permission to view images, the post
     containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
-    
-    
-    
     """
     pagination_class = PostsPagination
     authentication_classes = (NodeBasicAuthentication,)
@@ -155,7 +152,7 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
         if post.author.friends_with(requesting_author):
             return_post = True
         elif remote_node.local:
-            for friend in post.author.friends:
+            for friend in post.author.friends.all():
                 if requesting_author.friends_with(friend):
                     return_post = True
                     break
@@ -203,8 +200,12 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
                         and requester_friend_node.get_if_two_authors_are_friends(requester_friend.id, post.author_id) \
                         and requester_friend_node.get_if_two_authors_are_friends(requester_friend_id,
                                                                                  requesting_author.author_id)
+                if return_post:
+                    # We've got at least one FOAF connection, and that's good enough
+                    break
 
         if return_post:
+            self.action = "retrieve"
             return self.retrieve(request, *args, **kwargs)
         else:
             return Response({"detail": "The requested Author is not permitted to view this Post."},

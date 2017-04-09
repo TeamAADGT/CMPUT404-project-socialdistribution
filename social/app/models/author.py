@@ -98,7 +98,7 @@ class Author(models.Model):
 
     @classmethod
     def parse_uri(cls, uri):
-        match = re.match(r'^(?P<host>(http(s)?//(.+)/))author/(?P<pk>[0-9a-fA-F-]+)', uri)
+        match = re.match(r'^(?P<host>(https?://(.+)/))author/(?P<pk>[0-9a-fA-F-]+)/?', uri)
         return match.group('host'), uuid.UUID(match.group('pk'))
 
     def get_uri(self):
