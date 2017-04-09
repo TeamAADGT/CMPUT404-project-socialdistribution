@@ -126,7 +126,7 @@ def create_profile(sender, **kwargs):
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
-    if author.github != "" and not author.has_github_task:
+    if author.github != "" and not author.has_github_task and author.node.local:
         time = datetime.now().replace(2018, 1, 1)
         get_github_activity(str(author.id), repeat=60, repeat_until=time)
         author.has_github_task = True
