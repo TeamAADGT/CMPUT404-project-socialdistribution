@@ -52,6 +52,9 @@ class Author(models.Model):
     def friends_with(self, author):
         return self != author and len(self.friends.filter(id=author.id)) > 0
 
+    def friends_with_remote_author(self, remote_author_id):
+        return len(self.friends.filter(id=remote_author_id)) > 0
+
     def has_outgoing_friend_request_for(self, author):
         return self != author and len(self.outgoing_friend_requests.filter(id=author.id)) > 0
 
