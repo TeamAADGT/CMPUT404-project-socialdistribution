@@ -48,7 +48,8 @@ service_urls = [
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^friendrequest/', service.friendrequest.views.friendrequest, name='friend-request'),
     url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.CommentListView.as_view(), name='comment-detail'),
-    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/', service.posts.views.AllPostsViewSet.as_view({"get": "retrieve"}),
+    url(r'^posts/$', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
+    url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/$', service.posts.views.SpecificPostsView.as_view(),
         name='post-detail'),
     url(r'^posts/', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
 ]
