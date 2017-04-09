@@ -11,7 +11,10 @@ from social.app.models.node import Node
 
 # For viewing comments at API endpoint
 class CommentSerializer(serializers.HyperlinkedModelSerializer):
-    author = UnknownAuthorSerializer()
+    author = serializers.HyperlinkedRelatedField(
+        view_name="service:author-detail",
+        read_only=True,
+    )
     contentType = serializers.CharField(default="text/markdown")
 
     class Meta:
@@ -19,12 +22,21 @@ class CommentSerializer(serializers.HyperlinkedModelSerializer):
         fields = ("id", "author", "comment", "published", "contentType")
 
 
+class NewCommentSerializer(serializers.Serializer):
+    author = UnknownAuthorSerializer()
+    comment = serializers.CharField()
+    contentType = serializers.CharField(default="text/markdown")
+    published = serializers.DateTimeField()
+    id = serializers.UUIDField()
+
+
 # For posting comment to API endpoint /service/posts/<post_id>/comments/
 class CreateCommentSerializer(serializers.Serializer):
     query = serializers.CharField(default="addComment")
     post = serializers.URLField()
-    comment = CommentSerializer()
+    comment = NewCommentSerializer()
 
+    # TODO: make sure you check that the post is a local post!
     def validate_post(self, value):
         """
         We do not allow anonymous comments -- all comments must be submitted by known remote nodes
@@ -41,8 +53,7 @@ class CreateCommentSerializer(serializers.Serializer):
         remote_author_id = Author.get_id_from_uri(full_url_remote_author_id)
 
         remote_node_host = self.initial_data["comment"]["author"]["host"]
-        host = Node.get_host_from_uri(remote_node_host)
-        remote_node = get_object_or_404(Node, host=host)
+        remote_node = get_object_or_404(Node, service_url=remote_node_host)
         anonymous_node = remote_node is None or not remote_node.is_authenticated
 
         if not anonymous_node and not remote_node.share_posts:
@@ -82,7 +93,8 @@ class CreateCommentSerializer(serializers.Serializer):
                 raise ValidationError('You do not have permission to comment on that post')
 
     def create(self, validated_data):
-        comment_id = self.initial_data["comment"]["id"]
+        comment_data = self.initial_data["comment"]
+        comment_id = comment_data["id"]
 
         # We have already checked that the post is local so we know it must already be in the DB
         full_url_post_id = self.initial_data["post"]
@@ -90,16 +102,16 @@ class CreateCommentSerializer(serializers.Serializer):
         post = get_object_or_404(Post, pk=post_id)
 
         # May or may not be in our DB, so use create/update
-        full_url_author_id = self.initial_data["comment"]["author"]["url"]
+        author_data = comment_data["author"]
+        full_url_author_id = author_data["url"]
         remote_author_id = Author.get_id_from_uri(full_url_author_id)
 
         # Need to add remote node as foreign key
-        remote_node_host = self.initial_data["comment"]["author"]["host"]
-        host = Node.get_host_from_uri(remote_node_host)
-        remote_node = get_object_or_404(Node, host=host)
+        remote_node_host = author_data["host"]
+        remote_node = get_object_or_404(Node, service_url=remote_node_host)
 
-        remote_display_name = self.initial_data["comment"]["author"]["displayName"]
-        remote_github = self.initial_data["comment"]["author"]["github"]
+        remote_display_name = author_data["displayName"]
+        remote_github = author_data["github"] if "github" in author_data else ""
 
         # Need to add remote author to DB
         author, created = Author.objects.update_or_create(
@@ -111,8 +123,8 @@ class CreateCommentSerializer(serializers.Serializer):
             }
         )
 
-        remote_comment = self.initial_data["comment"]["comment"]
-        published = self.initial_data["comment"]["published"]
+        remote_comment = comment_data["comment"]
+        published = comment_data["published"]
 
         Comment(
             id=comment_id,

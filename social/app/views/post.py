@@ -118,7 +118,7 @@ def post_create(request):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
 
 
 # Delete a particular post
