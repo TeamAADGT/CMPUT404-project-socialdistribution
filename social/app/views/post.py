@@ -40,7 +40,6 @@ def my_stream_posts(request):
 
     # User views "My Feed"
     if request.user.is_authenticated():
-
         user = request.user
 
         author = Author.objects.get(user=request.user.id)
@@ -171,7 +170,6 @@ def post_update(request, pk):
         "form": form,
     }
     return render(request, "posts/post_form.html", context)
-
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
