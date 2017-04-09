@@ -42,6 +42,6 @@ urlpatterns = [
     # /
     url(r'^$', post_views.my_stream_posts, name='index'),
     url(r'^posts/', include(posts_urlpatterns, namespace='posts')),
-    url(r'^authors/', include(authors_urlpatterns, namespace='authors')),
+    url(r'^author/', include(authors_urlpatterns, namespace='authors')),
     url(r'^friendrequests/$', friend_views.FriendRequestsListView.as_view(), name='friend-requests-list'),
 ]
