@@ -9,6 +9,7 @@ from service.posts.serializers import PostSerializer
 from social.app.models.post import Post
 
 
+# TODO: Prettify this (ViewSets), fix examples, add examples (/service/author/posts, /service/author/{id}/posts)
 # /service/posts/
 class PublicPostsList(generics.ListAPIView):
     """
@@ -96,6 +97,69 @@ class SpecificPostsView(generics.ListAPIView):
     
     If the local post has an attached image, and the current remote node has permission to view images, the post
     containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
+
+    Example
+    <pre>
+    {
+      &nbsp&nbsp"count": 1,
+      &nbsp&nbsp"posts": [
+        &nbsp&nbsp&nbsp&nbsp{
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"title": "a",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"source": "http://127.0.0.1:8000/posts/2992bd35-d2a1-4f2f-8d75-ea626d8fc707/",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"origin": "http://127.0.0.1:8000/posts/2992bd35-d2a1-4f2f-8d75-ea626d8fc707/",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"description": "a",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"content": "a",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"categories": [],
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comments": [
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp{
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "0b12b470-5b74-4add-9726-a98fbde9c72c",
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comment": "abcd",
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T20:43:10.097387Z",
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown"
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp{
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "6080dfed-860a-45ff-bffc-e88605262122",
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comment": "defgh",
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T20:43:15.145294Z",
+              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown"
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp}
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp],
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T20:26:34.762237Z",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "2992bd35-d2a1-4f2f-8d75-ea626d8fc707",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/posts/2992bd35-d2a1-4f2f-8d75-ea626d8fc707/",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"visibility": "PRIVATE",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"visibleTo": [],
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"unlisted": false
+        &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp}
+      &nbsp&nbsp&nbsp&nbsp],
+      &nbsp&nbsp&nbsp&nbsp"next": null,
+      &nbsp&nbsp&nbsp&nbsp"query": "posts",
+      &nbsp&nbsp&nbsp&nbsp"size": 100,
+      &nbsp&nbsp&nbsp&nbsp"previous": null
+    }
+    </pre>
     """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
