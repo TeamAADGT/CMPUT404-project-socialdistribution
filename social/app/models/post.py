@@ -2,7 +2,6 @@ import re
 import uuid, logging
 
 import CommonMark
-from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.db.models import Q
@@ -183,9 +182,12 @@ def get_all_foaf_posts(author):
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
+        print ""
         print "NODE", node
         try:
             some_json = node.get_public_posts()
+            print some_json
+            print ""
             for post_json in some_json['posts']:
                 author_json = post_json['author']
 
@@ -222,7 +224,7 @@ def get_remote_node_posts():
                         'visibility': post_json['visibility'],
                     }
                 )
-
+                """
                 comments = post_json['comments']
                 print ""
                 for comment in comments:
@@ -242,12 +244,19 @@ def get_remote_node_posts():
                     remote_node_host = comment["author"]["host"]
                     host = Node.get_host_from_uri(remote_node_host)
                     print "HOST", host
+                    remote_display_name = comment["author"]["displayName"]
+                    print "DN", remote_display_name
+                    remote_github = comment["author"]["github"]
+                    print "G", remote_github
 
-                    """
+                    # TODO: Beware of localhost and 127.0.0.1:8000/ -- don't want to accidentally add these as separate nodes
+                    if host == "127.0.0.1":
+                        host = "127.0.0.1:8000"
+
                     # Need to check to see if node is already in the DB. If yes, great. If no, add them
                     # Can do this by checking that queryset size == 1
                     node_queryset = Node.objects.filter(host=host)
-                    # TODO: Beware of localhost and 127.0.0.1:8000/ -- don't want to accidentally add these as separate nodes
+
                     if not node_queryset:
                         # need to add remote node to DB
                         Node(
@@ -264,7 +273,6 @@ def get_remote_node_posts():
 
 
                     # Need to add remote author to DB
-
                     author, created = Author.objects.update_or_create(
                         id=remote_author_id,
                         defaults={
@@ -281,11 +289,10 @@ def get_remote_node_posts():
                             "post":post,
                             "author":author,
                             "comment":remote_comment,
-                            "published":published,
+                            "published":comment_published,
                         }
                     )
-                    """
-
+                """
                 node_posts.append(post)
 
 

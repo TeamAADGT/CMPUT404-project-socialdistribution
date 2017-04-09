@@ -1,7 +1,6 @@
 import uuid
 
 from django.db import models
-
 from social.app.models.author import Author
 from social.app.models.post import Post
 
