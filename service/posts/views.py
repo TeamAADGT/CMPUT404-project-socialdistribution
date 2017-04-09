@@ -9,6 +9,7 @@ from service.posts.serializers import PostSerializer
 from social.app.models.post import Post
 
 
+# /service/posts/
 class PublicPostsList(generics.ListAPIView):
     """
     Returns all local posts set to public visibility.
@@ -30,7 +31,11 @@ class PublicPostsList(generics.ListAPIView):
 
 
 # Defined as a ViewSet so a custom function can be defined to get around schema weirdness -- see all_posts()
+# /service/author/posts
 class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """
+    stuff
+    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
@@ -47,6 +52,7 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return self.list(request, *args, **kwargs)
 
 
+# /service/posts/{id}/
 class SpecificPostsView(generics.ListAPIView):
     """
     Returns the local post with the specified ID, if any.
@@ -66,7 +72,11 @@ class SpecificPostsView(generics.ListAPIView):
         return get_local_posts(remote_node).filter(Q(id=post_id) | Q(parent_post__id=post_id))
 
 
+# /service/author/{id}/posts
 class AuthorPostsView(generics.ListAPIView):
+    """
+    stuff
+    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)

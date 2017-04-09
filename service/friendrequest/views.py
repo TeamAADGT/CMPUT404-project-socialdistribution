@@ -8,11 +8,14 @@ from service.friendrequest.serializers import FriendRequestSerializer
 from social.app.models.author import Author
 
 
+# /service/friendrequest/
 @api_view(["POST"])
 @authentication_classes((NodeBasicAuthentication,))
 @permission_classes((IsAuthenticated,))
 def friendrequest(request):
     """
+    Returns an author and the person that author would like to befriend.</br>
+    </br>
     Example </br>
     <pre>
     {

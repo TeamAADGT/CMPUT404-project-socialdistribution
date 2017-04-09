@@ -14,6 +14,7 @@ from service.authors.serializers import AuthorSerializer, AuthorURLSerializer
 from social.app.models.author import Author
 
 
+# /service/author/{id} (overrides other 2 as well if they aren't defined)
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows for the retrieval and modification of Authors.
@@ -24,6 +25,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    # /service/author/{id}/friends
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends(self, request, pk=None):
         """
@@ -60,6 +62,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
+    # /service/author/{local_id}/friends/{other_host_name}/author/{other_id}
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def two_authors_are_friends(self, request, local_id=None, other_host_name=None, other_id=None):
         try:
