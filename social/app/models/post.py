@@ -111,6 +111,19 @@ class Post(models.Model):
         names = self.categories_list()
         return " ".join(names) if names else ""
 
+    def visible_to_uuid_list(self):
+        return [str(author.id) for author in self.visible_to.all()]
+
+    def visible_to_uri_string(self):
+        authors_uuids = self.visible_to_uuid_list()
+        authors_uris = list()
+
+        for author_uuid in authors_uuids:
+            author_uri = reverse('app:author-detail', kwargs={'pk': author_uuid})
+            authors_uuids.append(author_uri)
+
+        return "\n".join(authors_uris) if authors_uris else ""
+
     def is_text(self):
         return self.content_type in keys(Post.TEXT_CONTENT_TYPES)
 

@@ -162,7 +162,7 @@ def post_update(request, pk):
                     instance=post,
                     initial={
                         'upload_content_type': post.child_post.content_type if post.child_post else "",
-                        'categories': post.categories_string()
+                        'categories': post.categories_string(), 'visible_to': post.visible_to_uri_string(),
                     })
 
     if form.is_valid():
