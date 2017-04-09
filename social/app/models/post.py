@@ -114,13 +114,24 @@ class Post(models.Model):
     def visible_to_uuid_list(self):
         return [str(author.id) for author in self.visible_to.all()]
 
-    def visible_to_uri_string(self):
+    def visible_to_uris_string(self):
         authors_uuids = self.visible_to_uuid_list()
         authors_uris = list()
 
         for author_uuid in authors_uuids:
-            author_uri = reverse('app:author-detail', kwargs={'pk': author_uuid})
-            authors_uuids.append(author_uri)
+            author_host = Author.objects.get(pk=author_uuid).node.host
+            author_service_url = Author.objects.get(pk=author_uuid).node.service_url
+
+            protocol = ""
+            if author_service_url.find("http://") >= 0:
+                protocol += "http://"
+            elif author_service_url.find("https://") >= 0:
+                protocol += "https://"
+            else:
+                protocol += ""
+
+            author_uri = reverse('app:authors:detail', kwargs={'pk': author_uuid})
+            authors_uris.append(protocol + author_host + author_uri)
 
         return "\n".join(authors_uris) if authors_uris else ""
 

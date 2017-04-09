@@ -8,17 +8,18 @@ from social.app.models.author import Author
 
 
 class PostForm(forms.ModelForm):
-    categories = forms.CharField(
-        label="Categories",
-        required=False,
-        help_text="Space-delimited",
-    )
 
     visible_to = forms.CharField(
         label="Visible to",
         required=False,
-        help_text="New line",
+        help_text="Single author link per line",
         widget=forms.Textarea,
+    )
+
+    categories = forms.CharField(
+        label="Categories",
+        required=False,
+        help_text="Space-delimited",
     )
 
     content_type = forms.ChoiceField(choices=Post.TEXT_CONTENT_TYPES)
@@ -31,6 +32,9 @@ class PostForm(forms.ModelForm):
     upload_content = forms.FileField(
         required=False
     )
+
+    field_order = ["title", "description", "content_type", "content", "categories", "unlisted",
+                   "visibility", "visible_to", "upload_content_type", "upload_content" ]
 
     def save(self, commit=True, *args, **kwargs):
         request = kwargs["request"]

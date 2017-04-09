@@ -80,7 +80,7 @@ def my_stream_posts(request):
                  .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
                  .distinct())
 
-        context["user_posts"] = sorted(posts, key=attrgetter('published'))
+        context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
 
         return render(request, 'app/index.html', context)
 
@@ -122,7 +122,7 @@ def post_create(request):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
 
 
 # Delete a particular post
@@ -162,7 +162,7 @@ def post_update(request, pk):
                     instance=post,
                     initial={
                         'upload_content_type': post.child_post.content_type if post.child_post else "",
-                        'categories': post.categories_string(), 'visible_to': post.visible_to_uri_string(),
+                        'categories': post.categories_string(), 'visible_to': post.visible_to_uris_string(),
                     })
 
     if form.is_valid():
@@ -172,7 +172,7 @@ def post_update(request, pk):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/

@@ -71,14 +71,14 @@ $(document).ready(function () {
 
                     }
                     else {
-                        $("#id_visible_to").parent(".form-group").css("display", "none");
+                        $("#id_visible_to").parent(".form-group").hide("slow");
                     }
                 });
             })
             .change();
     }
 
-    //postVisibleTo();
+    postVisibleTo();
 
     /* Show window for users that post is going to be visible to */
     function postVisibleTo2() {
@@ -102,8 +102,7 @@ $(document).ready(function () {
             .change();
     }
 
-    postVisibleTo2();
+    //postVisibleTo2();
 });
-
 
 
