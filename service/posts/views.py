@@ -15,8 +15,42 @@ class PublicPostsList(generics.ListAPIView):
     Returns all local posts set to public visibility.
     
     Does not require authentication.
-    
-    For all posts, see /service/author/posts/.
+
+    Example response:
+    <pre>
+    {
+      &nbsp&nbsp&nbsp"count": 1,
+      &nbsp&nbsp&nbsp"posts": [
+        &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp{
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"title": "test",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"source": "http://127.0.0.1:8000/posts/ab38123f-8290-4902-a5ce-0a4db70ce7c1/",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"origin": "http://127.0.0.1:8000/posts/ab38123f-8290-4902-a5ce-0a4db70ce7c1/",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"description": "etes",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"content": "testg",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"categories": [],
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comments": [],
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T19:48:07.236149Z",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "ab38123f-8290-4902-a5ce-0a4db70ce7c1",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/posts/ab38123f-8290-4902-a5ce-0a4db70ce7c1/",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"visibility": "PUBLIC",
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"visibleTo": [],
+          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"unlisted": false
+        &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp}
+      &nbsp&nbsp&nbsp],
+      &nbsp&nbsp&nbsp"next": null,
+      &nbsp&nbsp&nbsp"query": "posts",
+      &nbsp&nbsp&nbsp"size": 100,
+      &nbsp&nbsp&nbsp"previous": null
+    }
+    </pre>
     """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
@@ -34,7 +68,10 @@ class PublicPostsList(generics.ListAPIView):
 # /service/author/posts
 class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
-    stuff
+    All the posts on the host are returned.
+
+    To see an example look at /service/posts/, only difference being that /service/author/posts
+    contains all posts.
     """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
@@ -75,7 +112,10 @@ class SpecificPostsView(generics.ListAPIView):
 # /service/author/{id}/posts
 class AuthorPostsView(generics.ListAPIView):
     """
-    stuff
+    Returns all posts of an author that a user is allowed to see, can require authentication.
+
+    For an example of this look at /service/posts/, only differences being the author ID of
+    a post will always be the same and the visibility will vary.
     """
     pagination_class = PostsPagination
     serializer_class = PostSerializer

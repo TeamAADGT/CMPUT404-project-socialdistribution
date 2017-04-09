@@ -9,11 +9,74 @@ from service.comments.pagination import CommentsPagination
 from service.comments.serializers import CommentSerializer, CreateCommentSerializer
 
 
+# TODO: Break this into separate GET/POST, prettify it
 # /service/posts/{id}/comments/ (both GET and POST)
 class CommentListView(generics.ListCreateAPIView):
     """
-    test</br>
-    1234
+    Will either post a comment to a post (if allowed) or get comments on a post.
+
+    (examples below just from the given examples)
+
+    Example of a successful GET:
+    <pre>
+    {        
+        &nbsp&nbsp&nbsp"query": "comments",
+        &nbsp&nbsp&nbsp"count": 1023,
+        &nbsp&nbsp&nbsp"size": 50,
+        &nbsp&nbsp&nbsp"next": null,
+        &nbsp&nbsp&nbsp"previous": null,
+        &nbsp&nbsp&nbsp"comments":[{
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author":{
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id":"http://127.0.0.1:5454/8d919f29c12e8f97bcbbd34cc908f19ab9496989",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host":"http://127.0.0.1:5454/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName":"Greg"
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comment":"Sweet Trick Shot",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType":"text/markdown",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published":"2015-03-09T13:07:04+00:00",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id":"5471fe89-7697-4625-a06e-b3ad18577b72"
+        &nbsp&nbsp&nbsp}]
+    }
+    </pre>
+
+    Example of a POST:
+    <pre>
+    {
+        &nbsp&nbsp&nbsp"query": "addComment",
+        &nbsp&nbsp&nbsp"post":"http://whereitcamefrom.com/posts/zzzzz",
+        &nbsp&nbsp&nbsp"comment":{
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author":{
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host":"http://127.0.0.1:5454/",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName":"Greg Johnson",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "http://github.com/gjohnson"
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comment":"Sick Olde English",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType":"text/markdown",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published":"2015-03-09T13:07:04+00:00",
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id":"de305d54-75b4-431b-adb2-eb6b9e546013"
+        &nbsp&nbsp&nbsp}
+    }
+    </pre>
+
+    If the POST is allowed:
+    <pre>
+    {
+        &nbsp&nbsp&nbsp"query": "addComment",
+        &nbsp&nbsp&nbsp"success": true,
+        &nbsp&nbsp&nbsp"message":"Comment Added"
+    }
+    </pre>
+
+    If the POST isn't allowed:
+    <pre>
+    {
+        &nbsp&nbsp&nbsp"query": "addComment",
+        &nbsp&nbsp&nbsp"success": false,
+        &nbsp&nbsp&nbsp"message":"Comment not allowed"
+    }
+    </pre>
     """
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination

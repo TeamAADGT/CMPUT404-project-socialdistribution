@@ -16,30 +16,23 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows for the retrieval and modification of Authors that exist.
 
-    Example success response:
+    Example successful response:
     <pre>
     {
-        &nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-        &nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
-        &nbsp&nbsp&nbsp"displayName": "Test User",
-        &nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-        &nbsp&nbsp&nbsp"friends": [
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp{
-                 &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/90926f84-1672-4f0f-873e-f2f720ae28f2/"
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp}
-        &nbsp&nbsp&nbsp],
-        &nbsp&nbsp&nbsp"github": "https://github.com/tester",
-        &nbsp&nbsp&nbsp"firstName": "Test",
-        &nbsp&nbsp&nbsp"lastName": "User",
-        &nbsp&nbsp&nbsp"email": "test@ualberta.ca",
-        &nbsp&nbsp&nbsp"bio": "I am a tester."
-    }
-    </pre>
-
-    Example failure response:
-    <pre>
-    {
-        &nbsp&nbsp&nbsp"detail": "Not found."
+        "id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+        "host": "http://127.0.0.1:8000/service/",
+        "displayName": "Test User",
+        "url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+        "friends": [
+            {
+                 "url": "http://127.0.0.1:8000/service/author/90926f84-1672-4f0f-873e-f2f720ae28f2/"
+            }
+        ],
+        "github": "https://github.com/tester",
+        "firstName": "Test",
+        "lastName": "User",
+        "email": "test@ualberta.ca",
+        "bio": "I am a tester."
     }
     </pre>
     """
@@ -49,7 +42,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    # /service/author/{id}/friends
+    # /service/author/{id}/friends (GET)
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends(self, request, pk=None):
         """
@@ -86,6 +79,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
+    # /service/author/{id}/friends (POST)
     @detail_route(methods=["POST"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends_search(self, request, pk=None):
         """
@@ -187,11 +181,11 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
 
             {
                 "query":"friends",
+                "friends": true,
                 "authors":[
-                    "http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
-                    "http://127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891"
-                ],
-                "friends": true
+                    "http://127.0.0.1:8000/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c",
+                    "http://127.0.0.1:8000/author/90926f84-1672-4f0f-873e-f2f720ae28f2"
+                ]
             }
         """
         try:
