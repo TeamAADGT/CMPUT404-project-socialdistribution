@@ -1,5 +1,6 @@
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.generics import CreateAPIView
+from rest_framework.response import Response
 
 from social.app.models.comment import Comment
 from social.app.models.post import Post
@@ -43,9 +44,13 @@ class CommentListView(generics.ListCreateAPIView):
 
         return queryset
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         comment = serializer.save()
-        print "Comment Saved", comment
+        return Response(CommentSerializer(comment, context={'request': request}).data,
+                        status=status.HTTP_201_CREATED)
 
 
 
