@@ -32,4 +32,5 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Post
         fields = ("title", "source", "origin", "description", "contentType", "content", "author",
-                  "categories", "comments", "published", "id", "url", "visibility", "visibleTo", "unlisted")
+                  "categories", "comments", "published", "id", "url", "visibility", "visibleTo",
+                  "unlisted")
