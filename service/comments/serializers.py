@@ -25,8 +25,6 @@ class CreateCommentSerializer(serializers.Serializer):
     post = serializers.URLField()
     comment = CommentSerializer()
 
-
-    # TODO: make sure you check that that post is a local post!
     def validate_post(self, value):
         """
         We do not allow anonymous comments -- all comments must be submitted by known remote nodes
@@ -58,7 +56,8 @@ class CreateCommentSerializer(serializers.Serializer):
         else: # We trust this node, so allow them to comment on this post IF the remote author has permission to view
             # that post.
             queryset = Post.objects.filter(id=post_id)
-            queryset = queryset.exclude(visibility="SERVERONLY")
+            queryset = queryset.filter(author__node__local=True) # post must be local
+            queryset = queryset.exclude(visibility="SERVERONLY") # post must not be local only
 
             if post.visibility == "PUBLIC" and queryset:
                 return value
@@ -82,11 +81,10 @@ class CreateCommentSerializer(serializers.Serializer):
             else:
                 raise ValidationError('You do not have permission to comment on that post')
 
-
     def create(self, validated_data):
         comment_id = self.initial_data["comment"]["id"]
 
-        # Assuming we have already checked that the post is local
+        # We have already checked that the post is local so we know it must already be in the DB
         full_url_post_id = self.initial_data["post"]
         post_id = Post.get_id_from_uri(full_url_post_id)
         post = get_object_or_404(Post, pk=post_id)
@@ -116,7 +114,6 @@ class CreateCommentSerializer(serializers.Serializer):
         remote_comment = self.initial_data["comment"]["comment"]
         published = self.initial_data["comment"]["published"]
 
-        # Save to database and then return instance
         Comment(
             id=comment_id,
             post=post,
