@@ -46,6 +46,7 @@ class Post(models.Model):
     source = models.URLField()
     origin = models.URLField()
     description = models.TextField()
+    github_id = models.TextField(default="")
 
     content_type = models.CharField(
         max_length=20,
@@ -173,6 +174,11 @@ def get_all_foaf_posts(author):
     return Post.objects \
         .filter(Q(author__id__in=foafs)) \
         .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
+
+def get_all_private_posts():
+    return Post.objects \
+        .filter(Q(visibility="PRIVATE")) \
+        .order_by('-published')
 
 
 # This gets all remote posts from:
