@@ -127,18 +127,20 @@ def create_profile(sender, **kwargs):
     if user.is_staff:
         return
 
-    if kwargs["created"] and not user.profile:
+    if kwargs["created"]:
         # Creating a new User populates a new Author, if not already set
-        user_profile = Author(user=user)
-        user_profile.node = Node.objects.get(local=True)
+        author = Author(user=user)
+        author.node = Node.objects.get(local=True)
+        author.save()
+    else:
+        author = user.profile
 
-    user_profile = user.profile
-    user_profile.first_name = user.first_name
-    user_profile.last_name = user.last_name
-    user_profile.displayName = user.first_name + ' ' + user.last_name
-    user_profile.email = user.email
+    author.first_name = user.first_name
+    author.last_name = user.last_name
+    author.displayName = user.first_name + ' ' + user.last_name
+    author.email = user.email
 
-    user_profile.save()
+    author.save()
 
 
 def update_profile(sender, **kwargs):
