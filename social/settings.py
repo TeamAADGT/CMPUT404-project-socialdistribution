@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'service.apps.ApiConfig',
     'rest_framework_swagger',
+    'background_task',
 ]
 
 MIDDLEWARE_CLASSES = [
