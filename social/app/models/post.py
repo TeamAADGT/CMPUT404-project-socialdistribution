@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from social.app.models.author import Author
 from social.app.models.category import Category
 from social.app.models.node import Node
-#from social.app.models.comment import Comment
+import comment as comment_module
 
 
 class Post(models.Model):
@@ -188,12 +188,8 @@ def get_all_private_posts():
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
-        print ""
-        print "NODE", node
         try:
             some_json = node.get_public_posts()
-            print some_json
-            print ""
             for post_json in some_json['posts']:
                 author_json = post_json['author']
 
@@ -230,11 +226,9 @@ def get_remote_node_posts():
                         'visibility': post_json['visibility'],
                     }
                 )
-                """
+
                 comments = post_json['comments']
-                print ""
                 for comment in comments:
-                    print "!!!", comment
                     comment_published = comment["published"]
                     comment_id = comment["id"]
                     remote_comment = comment["comment"]
@@ -249,11 +243,8 @@ def get_remote_node_posts():
                     # Need to add remote node as foreign key
                     remote_node_host = comment["author"]["host"]
                     host = Node.get_host_from_uri(remote_node_host)
-                    print "HOST", host
                     remote_display_name = comment["author"]["displayName"]
-                    print "DN", remote_display_name
                     remote_github = comment["author"]["github"]
-                    print "G", remote_github
 
                     # TODO: Beware of localhost and 127.0.0.1:8000/ -- don't want to accidentally add these as separate nodes
                     if host == "127.0.0.1":
@@ -287,8 +278,9 @@ def get_remote_node_posts():
                             'github': remote_github,
                         }
                     )
+
                     # Need to add remote comment to DB
-                    author, created = Comment.objects.update_or_create(
+                    author, created = comment_module.Comment.objects.update_or_create(
                         id=comment_author_id,
                         defaults={
                             "id":comment_id,
@@ -298,7 +290,6 @@ def get_remote_node_posts():
                             "published":comment_published,
                         }
                     )
-                """
                 node_posts.append(post)
 
 
