@@ -7,7 +7,6 @@ import service.comments.views
 
 import service.internal.authors.views
 
-
 # Viewset methods are mapped to URLs manually to get around issue where the API schema wouldn't show all available
 # endpoints, causing problems in Swagger
 author_urls = [
@@ -41,13 +40,15 @@ internal_urls = [
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browseable API.
 service_urls = [
-    url(r'^author/(?P<pk>[0-9a-z\\-]+)/posts/',service.posts.views.AuthorPostsView.as_view(),
+    url(r'^author/(?P<pk>[0-9a-z\\-]+)/posts/', service.posts.views.AuthorPostsView.as_view(),
         name='author-posts-list'),
     url(r'^author/', include(author_urls)),
     url(r'^internal/', include(internal_urls, namespace="internal")),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^friendrequest/', service.friendrequest.views.friendrequest, name='friend-request'),
-    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.CommentListView.as_view(), name='comment-detail'),
+    url(r'^friendrequest/', service.friendrequest.views.FriendRequestViewSet.as_view({'post': 'friendrequest'}),
+        name='friend-request'),
+    url(r'^posts/(?P<pk>[0-9a-z\\-]+)/comments/', service.comments.views.CommentListView.as_view(),
+        name='comment-detail'),
     url(r'^posts/$', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
     url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/$', service.posts.views.SpecificPostsView.as_view(),
         name='post-detail'),
