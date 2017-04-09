@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-from service.authors.serializers import UnknownAuthorSerializer
+from service.authors.serializers import SimpleAuthorSerializer, UnknownAuthorSerializer
 from social.app.models.comment import Comment
 from social.app.models.post import Post
 from social.app.models.post import Author
@@ -11,10 +11,7 @@ from social.app.models.node import Node
 
 # For viewing comments at API endpoint
 class CommentSerializer(serializers.HyperlinkedModelSerializer):
-    author = serializers.HyperlinkedRelatedField(
-        view_name="service:author-detail",
-        read_only=True,
-    )
+    author = SimpleAuthorSerializer()
     contentType = serializers.CharField(default="text/markdown")
 
     class Meta:
