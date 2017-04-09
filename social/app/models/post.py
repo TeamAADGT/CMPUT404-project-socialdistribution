@@ -5,12 +5,10 @@ import CommonMark
 from django.db import models
 from django.urls import reverse
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 
 from social.app.models.author import Author
 from social.app.models.category import Category
 from social.app.models.node import Node
-import comment as comment_module
 
 
 class Post(models.Model):
@@ -226,72 +224,7 @@ def get_remote_node_posts():
                         'visibility': post_json['visibility'],
                     }
                 )
-
-                comments = post_json['comments']
-                for comment in comments:
-                    comment_published = comment["published"]
-                    comment_id = comment["id"]
-                    remote_comment = comment["comment"]
-                    comment_author_id = comment["author"]["id"]
-
-                    # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
-                    if 'http' in comment_author_id:
-                        comment_author_id = uuid.UUID(Author.get_id_from_uri(comment_author_id))
-                    else:
-                        comment_author_id = uuid.UUID(comment_author_id)
-
-                    # Need to add remote node as foreign key
-                    remote_node_host = comment["author"]["host"]
-                    host = Node.get_host_from_uri(remote_node_host)
-                    remote_display_name = comment["author"]["displayName"]
-                    remote_github = comment["author"]["github"]
-
-                    # TODO: Beware of localhost and 127.0.0.1:8000/ -- don't want to accidentally add these as separate nodes
-                    if host == "127.0.0.1":
-                        host = "127.0.0.1:8000"
-
-                    # Need to check to see if node is already in the DB. If yes, great. If no, add them
-                    # Can do this by checking that queryset size == 1
-                    node_queryset = Node.objects.filter(host=host)
-
-                    if not node_queryset:
-                        # need to add remote node to DB
-                        Node(
-                            name=host,
-                            host=host,
-                            service_url=remote_node_host,
-                            username="default",
-                            password="default",
-                        ).save()
-
-                        remote_node = get_object_or_404(Node, host=host)
-                    else:
-                        remote_node = get_object_or_404(Node, host=host)
-
-
-                    # Need to add remote author to DB
-                    author, created = Author.objects.update_or_create(
-                        id=remote_author_id,
-                        defaults={
-                            'node': remote_node,
-                            'displayName': remote_display_name,
-                            'github': remote_github,
-                        }
-                    )
-
-                    # Need to add remote comment to DB
-                    author, created = comment_module.Comment.objects.update_or_create(
-                        id=comment_author_id,
-                        defaults={
-                            "id":comment_id,
-                            "post":post,
-                            "author":author,
-                            "comment":remote_comment,
-                            "published":comment_published,
-                        }
-                    )
                 node_posts.append(post)
-
 
         except Exception, e:
             logging.error(e)
