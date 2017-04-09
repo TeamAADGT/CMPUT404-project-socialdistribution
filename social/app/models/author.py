@@ -1,12 +1,12 @@
 import uuid
-
 import re
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 
+from datetime import datetime
 from social.app.models.node import Node
-
 
 class Author(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -43,6 +43,8 @@ class Author(models.Model):
     )
 
     friends = models.ManyToManyField('self', blank=True)
+
+    has_github_task = models.BooleanField(default=False)
 
     def follows(self, author):
         return self != author and len(self.followed_authors.filter(id=author.id)) > 0
@@ -94,6 +96,24 @@ class Author(models.Model):
         match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
         return match.group('pk')
 
+    def get_uri(self):
+        return Author.get_uri_from_host_and_uuid(self.node.host, self.id)
+
+    # This method cannot have the same name as get_uri as overloading
+    # attributes is not directly supported in Python
+    @staticmethod
+    def get_uri_from_host_and_uuid(host_url, id):
+        if host_url[:-1] != '/':
+            host_url += '/'
+
+        if type(id) is not uuid.UUID:
+            id = uuid.UUID(id)
+
+        if host_url.startswith("http") is False:
+            host_url = "http://" + host_url
+
+        return host_url + 'author/' + str(id)
+
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
@@ -103,7 +123,19 @@ def create_profile(sender, **kwargs):
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
 
+def update_profile(sender, **kwargs):
+    from social.tasks import get_github_activity
+    author = kwargs["instance"]
+    if author.github != "" and not author.has_github_task:
+        time = datetime.now().replace(2018, 1, 1)
+        get_github_activity(str(author.id), repeat=60, repeat_until=time)
+        author.has_github_task = True
+        author.save()
+    elif author.github == "" and author.has_github_task:
+        author.has_github_task = False
+        author.save()
 
 post_save.connect(create_profile, sender=User)
+post_save.connect(update_profile, sender=Author)
 
 User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0])

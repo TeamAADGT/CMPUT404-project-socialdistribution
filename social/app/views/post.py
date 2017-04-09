@@ -17,6 +17,8 @@ from social.app.models.comment import Comment
 from social.app.models.post import Post
 from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts, get_all_private_posts
 
+
+
 def all_posts(request):
     """
     Get /posts/
@@ -40,7 +42,6 @@ def my_stream_posts(request):
 
     # User views "My Feed"
     if request.user.is_authenticated():
-
         user = request.user
 
         author = Author.objects.get(user=request.user.id)
@@ -171,7 +172,6 @@ def post_update(request, pk):
         "form": form,
     }
     return render(request, "posts/post_form.html", context)
-
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
