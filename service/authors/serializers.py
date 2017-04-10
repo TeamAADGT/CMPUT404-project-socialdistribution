@@ -3,6 +3,20 @@ from rest_framework import serializers
 from social.app.models.author import Author
 
 
+class UnknownAuthorSerializer(serializers.Serializer):
+    """
+    Used in input cases where we don't necessarily know about a remote Author yet, so it doesn't make sense
+    to use a ModelSerializer
+    """
+    id = serializers.URLField()
+    host = serializers.URLField()
+    url = serializers.URLField()
+    github = serializers.URLField(
+        required=False,
+        allow_blank=True
+    )
+
+
 class AuthorURLSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(
         view_name='service:author-detail', read_only=True, lookup_field='pk')
@@ -21,7 +35,7 @@ class SimpleAuthorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Author
-        fields = ('id', 'host', 'displayName', 'url',)
+        fields = ('id', 'host', 'displayName', 'url', 'github')
 
 
 class AuthorSerializer(serializers.ModelSerializer):

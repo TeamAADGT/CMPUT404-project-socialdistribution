@@ -1,3 +1,6 @@
+import urlparse
+
+import requests
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -12,7 +15,6 @@ from social.app.models.author import Author
 @authentication_classes((SessionAuthentication,))
 @permission_classes((IsAuthenticated,))
 def follow(request, pk=None):
-
     follower = request.user.profile
 
     if not follower.activated:
@@ -49,7 +51,6 @@ def follow(request, pk=None):
 @authentication_classes((SessionAuthentication,))
 @permission_classes((IsAuthenticated,))
 def unfollow(request, pk=None):
-
     unfollower = request.user.profile
 
     if not unfollower.activated:
@@ -86,7 +87,6 @@ def unfollow(request, pk=None):
 @authentication_classes((SessionAuthentication,))
 @permission_classes((IsAuthenticated,))
 def friendrequest(request, pk=None):
-
     current_author = request.user.profile
 
     if not current_author.activated:
@@ -95,6 +95,8 @@ def friendrequest(request, pk=None):
             status=status.HTTP_403_FORBIDDEN)
 
     try:
+        # This is triggered by an AJAX call on our website, on an Author's page,
+        # so it's not possible for it to not be in our database unless something unintended is happening
         target = Author.objects.get(id=pk)
     except Author.DoesNotExist:
         return Response(
@@ -116,8 +118,21 @@ def friendrequest(request, pk=None):
             {"detail": "Unactivated authors cannot be friend requested."},
             status=status.HTTP_403_FORBIDDEN)
 
-    current_author.add_friend_request(target)
+    if target.node.local:
+        current_author.add_friend_request(target)
+    else:
+        r = target.node.post_friend_request(request, current_author, target)
+
+        if 200 <= r.status_code < 300:
+            # Success!
+            current_author.add_friend_request(target)
+        else:
+            return Response(
+                {"detail": "Remote friend request failed."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     return Response(
-        {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id}, request=request)},
+        {"friend_requested_author": reverse("service:author-detail", kwargs={'pk': target.id},
+                                            request=request)},
         status=status.HTTP_200_OK)

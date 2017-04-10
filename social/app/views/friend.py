@@ -18,7 +18,19 @@ class FriendRequestsListView(generic.ListView):
 
         for new_friend_id in accepted_friend_requests:
             new_friend = Author.objects.get(id=new_friend_id)
-            logged_in_author.accept_friend_request(new_friend)
+
+            if new_friend.node.local:
+                logged_in_author.accept_friend_request(new_friend)
+            else:
+                r = new_friend.node.post_friend_request(request, logged_in_author, new_friend)
+
+                if 200 <= r.status_code < 300:
+                    # Success!
+                    logged_in_author.accept_friend_request(new_friend)
+                else:
+                    # Server's not working right now, but we still want to accept other requests, so just skip it
+                    pass
+
         logged_in_author.save()
 
         return HttpResponseRedirect(reverse("app:friend-requests-list"))

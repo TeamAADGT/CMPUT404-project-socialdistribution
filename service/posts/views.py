@@ -1,5 +1,5 @@
-from django.contrib.auth.models import AnonymousUser
-from rest_framework import viewsets, views, generics
+from django.db.models import Q
+from rest_framework import viewsets, views, generics, mixins
 from rest_framework.decorators import list_route
 from rest_framework.permissions import IsAuthenticated
 
@@ -29,7 +29,8 @@ class PublicPostsList(generics.ListAPIView):
         return get_local_posts(remote_node, public_only=True)
 
 
-class AllPostsViewSet(viewsets.ReadOnlyModelViewSet):
+# Defined as a ViewSet so a custom function can be defined to get around schema weirdness -- see all_posts()
+class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
@@ -44,6 +45,25 @@ class AllPostsViewSet(viewsets.ReadOnlyModelViewSet):
     def all_posts(self, request, *args, **kwargs):
         # Needed to make sure this shows up in the schema -- collides with /posts/ otherwise
         return self.list(request, *args, **kwargs)
+
+
+class SpecificPostsView(generics.ListAPIView):
+    """
+    Returns the local post with the specified ID, if any.
+    
+    If the local post has an attached image, and the current remote node has permission to view images, the post
+    containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
+    """
+    pagination_class = PostsPagination
+    serializer_class = PostSerializer
+    authentication_classes = (NodeBasicAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        post_id = self.kwargs["pk"]
+        remote_node = self.request.user
+
+        return get_local_posts(remote_node).filter(Q(id=post_id) | Q(parent_post__id=post_id))
 
 
 class AuthorPostsView(generics.ListAPIView):
