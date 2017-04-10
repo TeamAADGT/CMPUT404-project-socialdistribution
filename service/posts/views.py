@@ -58,7 +58,7 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
     """
     retrieve:
     Returns the local post with the specified ID, if any.
-
+    
     If the local post has an attached image, and the current remote node has permission to view images, the post
     containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
     """

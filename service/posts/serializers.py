@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from service.authors.serializers import SimpleAuthorSerializer, UnknownAuthorSerializer
+from service.comments.serializers import CommentSerializer
 from social.app.models.post import Post
 
 
@@ -11,6 +12,7 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
         source='id'
     )
     author = SimpleAuthorSerializer()
+    comments = CommentSerializer(many=True)
 
     contentType = serializers.CharField(source="content_type", read_only=True)
 
@@ -30,7 +32,8 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Post
         fields = ("title", "source", "origin", "description", "contentType", "content", "author",
-                  "categories", "comments", "published", "id", "url", "visibility", "visibleTo", "unlisted")
+                  "categories", "comments", "published", "id", "url", "visibility", "visibleTo",
+                  "unlisted")
 
 
 class FOAFCheckPostSerializer(serializers.Serializer):
