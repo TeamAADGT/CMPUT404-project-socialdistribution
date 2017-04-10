@@ -1,6 +1,8 @@
 import logging
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework import viewsets, status
+import requests
+from rest_framework import viewsets, status, generics
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

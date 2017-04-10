@@ -22,7 +22,6 @@ from social.app.models.post import get_all_public_posts, get_all_friend_posts, g
     get_remote_node_posts, get_all_private_posts, get_all_remote_node_posts
 
 
-
 def all_posts(request):
     """
     Get /posts/
@@ -38,6 +37,25 @@ def all_posts(request):
     return render(request, 'app/index.html', context)
 
 
+def create_author_uri(author):
+    author_host = author.node.host
+    author_service_url = author.node.service_url
+
+    author_uri = ""
+    protocol = ""
+    if author_service_url.find("http://") >= 0:
+        protocol += "http://"
+    elif author_service_url.find("https://") >= 0:
+        protocol += "https://"
+    else:
+        protocol += ""
+
+    author_path = reverse('app:authors:detail', kwargs={'pk': author.id})
+    author_uri += protocol + author_host + author_path
+
+    return author_uri
+
+
 def my_stream_posts(request):
     """
     Get /
@@ -49,6 +67,8 @@ def my_stream_posts(request):
         user = request.user
 
         author = Author.objects.get(user=request.user.id)
+
+        author_uri = create_author_uri(author)
 
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
@@ -75,18 +95,18 @@ def my_stream_posts(request):
             .filter(author__id__in=author.followed_authors.all())
 
         # case IV: posts.visibility=private
-        private_posts = get_all_private_posts() \
-            .filter(Q(visible_to=user.profile.id))
+        private_local_posts = get_all_local_private_posts() \
+            .filter(Q(visible_to_author__uri=author_uri))
 
 
         posts = ((public_and_following_posts |
                   friend_posts |
                   foaf_posts |
-                  private_posts)
+                  private_local_posts)
                  .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
                  .distinct())
 
-        context["user_posts"] = sorted(posts, key=attrgetter('published'))
+        context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
 
         return render(request, 'app/index.html', context)
 
@@ -177,7 +197,7 @@ def post_create(request):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
 
 
 # Delete a particular post
@@ -217,7 +237,8 @@ def post_update(request, pk):
                     instance=post,
                     initial={
                         'upload_content_type': post.child_post.content_type if post.child_post else "",
-                        'categories': post.categories_string()
+                        'categories': post.categories_string(),
+                        'visible_to_author': post.visible_to_authors_string(),
                     })
 
     if form.is_valid():
@@ -227,7 +248,8 @@ def post_update(request, pk):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
+
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/

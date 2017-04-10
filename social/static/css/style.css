@@ -104,6 +104,11 @@ body {
     height: 50%;
 }
 
+.sd-post-story {
+    word-wrap: break-word;
+}
+
+
 .sd-profile-comments-title {
     margin: 16px -16px 16px -16px;
     padding: 8px 16px;

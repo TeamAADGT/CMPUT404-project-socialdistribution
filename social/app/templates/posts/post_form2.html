@@ -52,6 +52,14 @@
                 </div>
 
                 <div class="form-group">
+                    {% for error in form.categories.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.categories.id_for_label }}">{{ form.categories.label }}</label>
+                    {{ form.categories|add_class:'form-control' }}
+                </div>
+
+                <div class="form-group">
                     {% for error in form.visibility.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
@@ -60,23 +68,17 @@
 
                 </div>
 
-                <!-- Begin select-authors-container -->
-                <div id="sd-select-authors-container">
-                    <div><label>Authors links</label></div>
-                    {% for error in form.visible_to.errors %}
+                {# Begin visible to authors textarea #}
+                <div class="form-group">
+                    {% for error in form.visible_to_author.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
+                    <label for="{{ form.visible_to_author.id_for_label }}">{{ form.visible_to_author.label }}</label>
+                    {{ form.visible_to_author|add_class:'form-control' }}
+                    <span id="helpBlock" class="help-block">{{ form.visible_to_author.help_text }}</span>
 
-                    <div class="input-group sd-author-item sd-margin-bottom-10">
-                        <input type="text" class="form-control" name="{{ form.visible_to.name }}" value=""
-                               placeholder="Author link"/>
-                        <div class="input-group-btn">
-                            <button type="button" class="btn btn-success btn-add">
-                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div><!-- End select-authors-container -->
+                </div>
+                {# End of visible to authors textarea #}
 
                 <div class="form-group">
                     {% for error in form.unlisted.errors %}
@@ -88,14 +90,6 @@
                             <strong>{{ form.unlisted.label }}</strong>
                         </label>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    {% for error in form.categories.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                    <label for="{{ form.categories.id_for_label }}">{{ form.categories.label }}</label>
-                    {{ form.categories|add_class:'form-control' }}
                 </div>
 
                 <div class="form-group">
