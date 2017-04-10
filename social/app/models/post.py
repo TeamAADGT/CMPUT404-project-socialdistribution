@@ -257,7 +257,7 @@ def get_remote_node_posts():
                 author_json = post_json['author']
 
                 # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
-                    if author_json['id'].startswith('http'):
+                if author_json['id'].startswith('http'):
                     remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
                 else:
                     remote_author_id = uuid.UUID(author_json['id'])
@@ -270,7 +270,7 @@ def get_remote_node_posts():
                         'displayName': author_json['displayName'],
                     }
                 )
-                    if post_json['id'].startswith('http'):
+                if post_json['id'].startswith('http'):
                     post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
                 else:
                     post_id = uuid.UUID(post_json['id'])
@@ -286,7 +286,7 @@ def get_remote_node_posts():
                         'author': author,
                         'published': post_json['published'],
                         'content': post_json['content'],
-                            'content_type': post_json['contentType'],
+                        'content_type': post_json['contentType'],
                         'visibility': post_json['visibility'],
                     }
                 )
@@ -296,6 +296,7 @@ def get_remote_node_posts():
             logging.error(e)
             logging.warn('Skipping a post retrieved from ' + node.host)
             continue
+
 
 # TODO: get posts from service/author/posts/
 # This gets all remote posts from:
