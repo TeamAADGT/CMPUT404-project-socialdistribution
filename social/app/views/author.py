@@ -164,8 +164,13 @@ class AuthorDetailView(generic.DetailView):
 
         # There's no way for author to be None here, but PyCharm disagrees -- suppressing the warning
         if not author.node.local and not fetched_new_author:
-            # Let's go get the latest version if we didn't already fetch it above
-            updated_author = author.node.create_or_update_remote_author(author_id)
+            try:
+                # Let's go get the latest version if we didn't already fetch it above
+                updated_author = author.node.create_or_update_remote_author(author_id)
+            except HTTPError:
+                # Remote server failed in a way that wasn't a 404, so let's just display our cached version
+                return author
+
             if updated_author is None:
                 # Well, looks like they deleted this author. Awkward.
                 author.delete()
