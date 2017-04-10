@@ -28,7 +28,8 @@ class FriendRequestsListView(generic.ListView):
                     # Success!
                     logged_in_author.accept_friend_request(new_friend)
                 else:
-                    r.raise_for_status()
+                    # Server's not working right now, but we still want to accept other requests, so just skip it
+                    pass
 
         logged_in_author.save()
 
