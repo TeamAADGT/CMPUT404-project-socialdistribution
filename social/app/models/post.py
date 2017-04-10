@@ -9,6 +9,7 @@ from django.db.models import Q
 from social.app.models.author import Author
 from social.app.models.category import Category
 from social.app.models.node import Node
+from social.app.models.authorlink import AuthorLink
 
 
 class Post(models.Model):
@@ -74,10 +75,10 @@ class Post(models.Model):
 
     # List of Authors who can read the PRIVATE message
     # attribute only renders in /posts/add/ if visibility is set to "PRIVATE"
-    visible_to = models.ManyToManyField(
-        Author,
+    visible_to_author = models.ManyToManyField(
+        AuthorLink,
         related_name='visible_posts',
-        blank=True
+        blank=True,
     )
 
     unlisted = models.BooleanField(default=False)
@@ -109,6 +110,51 @@ class Post(models.Model):
     def categories_string(self):
         names = self.categories_list()
         return " ".join(names) if names else ""
+
+    def visible_to_uuid_list(self):
+        return [str(author.id) for author in self.visible_to.all()]
+
+    def visible_to_uris_string(self):
+        authors_uuids = self.visible_to_uuid_list()
+        authors_uris = list()
+
+        for author_uuid in authors_uuids:
+            author_host = Author.objects.get(pk=author_uuid).node.host
+            author_service_url = Author.objects.get(pk=author_uuid).node.service_url
+
+            protocol = ""
+            if author_service_url.find("http://") >= 0:
+                protocol += "http://"
+            elif author_service_url.find("https://") >= 0:
+                protocol += "https://"
+            else:
+                protocol += ""
+
+            author_uri = reverse('app:authors:detail', kwargs={'pk': author_uuid})
+            authors_uris.append(protocol + author_host + author_uri)
+
+        return "\n".join(authors_uris) if authors_uris else ""
+
+    def visible_to_author_uri_list(self):
+        return [str(author_uri.uri) for author_uri in self.visible_to_author.all()]
+
+    def visible_to_authors_string(self):
+        authors_uris = self.visible_to_author_uri_list()
+        return "\n".join(authors_uris) if authors_uris else ""
+
+    def get_visible_to_author_uuid_list(self):
+        authors_uris = self.visible_to_author_uri_list()
+        authors_uuids = list()
+
+        for author_uri in authors_uris:
+            try:
+                author_uuid = Author.get_id_from_uri(author_uri)
+                authors_uuids.append(author_uuid)
+            except Exception as e:
+                logging.error(e)
+                logging.error("Invalid Author Link")
+
+        return authors_uuids
 
     def is_text(self):
         return self.content_type in keys(Post.TEXT_CONTENT_TYPES)
@@ -173,10 +219,24 @@ def get_all_foaf_posts(author):
         .filter(Q(author__id__in=foafs)) \
         .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
 
-def get_all_private_posts():
-    return Post.objects \
-        .filter(Q(visibility="PRIVATE")) \
-        .order_by('-published')
+
+def get_all_local_private_posts():
+    all_private_posts = Post.objects.filter(Q(visibility="PRIVATE")).order_by('-published')
+    local_authors_uris = list()
+
+    for post in all_private_posts:
+        authors_uris = post.visible_to_author_uri_list()
+
+        if authors_uris is not None:
+            for author_uri in authors_uris:
+                author_uuid = Author.get_id_from_uri(author_uri)
+
+                if Author.objects.get(id=author_uuid) is not None:
+                    local_authors_uris.append(author_uri)
+
+    all_private_posts = all_private_posts.filter(Q(visible_to_author__uri__in=local_authors_uris))
+
+    return all_private_posts
 
 
 # This gets all remote posts from:
