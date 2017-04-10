@@ -18,7 +18,7 @@
 </div>
 <div id="sd-profile-comments-wrapper">
     <div class="media-list">
-        {% for comment in post.comments.all %}
+        {% for comment in comments %}
             <div id="sd-comment-{{ comment.id }}" class="media sd-comment">
                 <div class="media-left">
                     <a href="#">
@@ -31,7 +31,7 @@
                     <div class="media-heading clearfix">
                         <div class="pull-left">
                             <h5>{{ comment.author.displayName }}</h5>
-                            <small>{{ comment.created }}</small>
+                            <small>{{ comment.published }}</small>
                         </div>
                     </div>
                     <div class="sd-comment-text-container">

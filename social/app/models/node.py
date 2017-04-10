@@ -1,5 +1,7 @@
 import logging
+import urlparse
 import re
+import uuid
 
 import requests
 from django.db import models
@@ -30,11 +32,32 @@ class Node(models.Model):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
     def _get_author(self, uuid):
-        url = self.service_url + "author/" + str(uuid)
+        url = urlparse.urljoin(self.service_url, "author/" + str(uuid))
+        return requests.get(url, auth=(self.username, self.password))
+
+    def _get_post(self, uuid):
+        url = urlparse.urljoin(self.service_url, "posts/" + str(uuid))
         return requests.get(url, auth=(self.username, self.password))
 
     def get_author(self, uuid):
         return self._get_author(uuid).json()
+
+    def get_post(self,uuid):
+        return self._get_post(uuid).json()
+
+    def get_post_comments(self, post_uuid):
+        all_comments = []
+        url = urlparse.urljoin(self.service_url, "posts/%s/comments" % str(post_uuid))
+        response = requests.get(url, auth=(self.username, self.password))
+        all_comments += response["comments"]
+        while "next" in response:
+            next_url = response["next"]
+            if not next_url:
+                break
+            response = requests.get(url, auth=(self.username, self.password))
+            all_comments += response["comments"]
+
+        return all_comments
 
     def get_author_friends(self, uuid):
         url = self.service_url + "author/" + str(uuid) + "/friends"
@@ -73,6 +96,48 @@ class Node(models.Model):
                 % url)
             return []
         """
+
+    def create_or_update_remote_post(self, post_uuid):
+        response = self._get_post(post_uuid)
+
+        try:
+            response.raise_for_status()
+        except HTTPError:
+            if response.status_code == requests.codes.not_found:
+                # Post not found
+                return None
+            else:
+                raise
+
+        json = response.json()
+        posts_json = json["posts"]
+        for post_json in posts_json:
+            if uuid.UUID(post_json["id"])==post_uuid:
+                from social.app.models.post import Post
+                author_json = post_json['author']
+                from social.app.models.author import Author
+                author_id = Author.get_id_from_uri(author_json['id'])
+                author = Author.objects.get(id=author_id)
+                post, created = Post.objects.update_or_create(
+                    id=uuid.UUID(post_json["id"]),
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
+
+                comments = post_json['comments']
+                count = post_json["count"]
+                return post, comments, count
+        return None
+
+
 
     def create_or_update_remote_author(self, uuid):
         response = self._get_author(uuid)

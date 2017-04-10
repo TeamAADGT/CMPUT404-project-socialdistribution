@@ -8,13 +8,16 @@ from django.db.models import Q
 from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
+from django.views import View
 from django.views import generic
+from django.views.generic.detail import SingleObjectMixin, BaseDetailView
 
 from social.app.forms.comment import CommentForm
 from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
+from social.app.models.node import Node
 from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, \
     get_remote_node_posts, get_all_private_posts, get_all_remote_node_posts
 
@@ -92,7 +95,7 @@ def my_stream_posts(request):
         success_url = reverse('app:posts:index')
         return HttpResponseRedirect(success_url)
 
-
+# Post
 class DetailView(generic.DetailView):
     """
     """
@@ -103,6 +106,54 @@ class DetailView(generic.DetailView):
     queryset = Post.objects.filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
 
     template_name = 'posts/detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(DetailView,self).get_context_data(**kwargs)
+        post = self.object
+        if post.author.node.local:
+            context["comments"] = post.comments.all()
+        else:
+            if self.count > len(self.comments):
+                # make request for post comments and add to context
+                comments_json = post.author.node.get_post_comments(post.id)
+            else:
+                comments_json = self.comments
+
+            all_comments = []
+            for comment_json in comments_json:
+                author = Author(
+                    displayName=comment_json["author"]["displayName"]
+                )
+                comment_json["author"] = author
+                comment = Comment(
+                    author=author,
+                    comment=comment_json["comment"],
+                    published=comment_json["published"],
+                    id=comment_json["id"]
+                )
+                all_comments.append(comment)
+
+            context["comments"] = all_comments
+
+        return context
+
+    def get_object(self, queryset=None):
+        post = super(DetailView, self).get_object(queryset)
+        post_id = post.id
+        if not post.author.node.local:
+            # make remote request
+            # resave post
+            # save size and count self.comment_count
+            post, self.comments, self.count = post.author.node.create_or_update_remote_post(post_id)
+            # save extra info, and return it
+
+        return post
+
+
+
+
+
+        return post
 
 
 def view_post_comments(request, pk):
