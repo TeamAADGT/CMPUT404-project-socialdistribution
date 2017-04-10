@@ -12,7 +12,7 @@ from service.comments.serializers import CommentSerializer, CreateCommentSeriali
 
 # TODO:
 # /service/posts/{id}/comments/ (both GET and POST)
-class CommentListView(viewsets.ReadOnlyModelViewSet):
+class CommentListView(generics.ListCreateAPIView):
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination
 
