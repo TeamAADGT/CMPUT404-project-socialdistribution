@@ -9,7 +9,7 @@ from social.app.models.author import Author
 
 
 # /service/friendrequest/
-class FriendRequestViewSet(viewsets.ViewSet):
+class FriendRequestViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FriendRequestSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)

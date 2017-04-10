@@ -10,9 +10,9 @@ from service.comments.pagination import CommentsPagination
 from service.comments.serializers import CommentSerializer, CreateCommentSerializer
 
 
-# TODO:
+# TODO: Don't break the "Try it out"
 # /service/posts/{id}/comments/ (both GET and POST)
-class CommentListView(generics.ListCreateAPIView):
+class CommentListView(viewsets.ReadOnlyModelViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination
 

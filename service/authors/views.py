@@ -22,20 +22,20 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     Example successful response:
     <pre>
     {
-        "id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-        "host": "http://127.0.0.1:8000/service/",
-        "displayName": "Test User",
-        "url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-        "friends": [
-            {
-                 "url": "http://127.0.0.1:8000/service/author/90926f84-1672-4f0f-873e-f2f720ae28f2/"
-            }
-        ],
-        "github": "https://github.com/tester",
-        "firstName": "Test",
-        "lastName": "User",
-        "email": "test@ualberta.ca",
-        "bio": "I am a tester."
+        &nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+        &nbsp"host": "http://127.0.0.1:8000/service/",
+        &nbsp"displayName": "Test User",
+        &nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+        &nbsp"friends": [
+            &nbsp&nbsp{
+                 &nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/90926f84-1672-4f0f-873e-f2f720ae28f2/"
+            &nbsp&nbsp}
+        &nbsp],
+        &nbsp"github": "https://github.com/tester",
+        &nbsp"firstName": "Test",
+        &nbsp"lastName": "User",
+        &nbsp"email": "test@ualberta.ca",
+        &nbsp"bio": "I am a tester."
     }
     </pre>
     """
