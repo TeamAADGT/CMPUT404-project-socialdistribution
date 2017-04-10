@@ -126,14 +126,23 @@ class AuthorDetailView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(AuthorDetailView, self).get_context_data(**kwargs)
-        logged_in_author = self.request.user.profile
-        detail_author = context["object"]
 
-        context['show_follow_button'] = logged_in_author.can_follow(detail_author)
-        context['show_unfollow_button'] = logged_in_author.follows(detail_author)
-        context['show_friend_request_button'] = logged_in_author.can_send_a_friend_request_to(detail_author)
-        context['outgoing_friend_request_for'] = logged_in_author.has_outgoing_friend_request_for(detail_author)
-        context['incoming_friend_request_from'] = logged_in_author.has_incoming_friend_request_from(detail_author)
-        context['is_friends'] = logged_in_author.friends_with(detail_author)
+        if self.request.user.is_authenticated():
+            logged_in_author = self.request.user.profile
+            detail_author = context["object"]
+
+            context['show_follow_button'] = logged_in_author.can_follow(detail_author)
+            context['show_unfollow_button'] = logged_in_author.follows(detail_author)
+            context['show_friend_request_button'] = logged_in_author.can_send_a_friend_request_to(detail_author)
+            context['outgoing_friend_request_for'] = logged_in_author.has_outgoing_friend_request_for(detail_author)
+            context['incoming_friend_request_from'] = logged_in_author.has_incoming_friend_request_from(detail_author)
+            context['is_friends'] = logged_in_author.friends_with(detail_author)
+        else:
+            context['show_follow_button'] = False
+            context['show_unfollow_button'] = False
+            context['show_friend_request_button'] = False
+            context['outgoing_friend_request_for'] = False
+            context['incoming_friend_request_from'] = False
+            context['is_friends'] = False
 
         return context

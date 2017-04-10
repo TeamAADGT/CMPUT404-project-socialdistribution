@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from datetime import datetime
 from social.app.models.node import Node
 
+
 class Author(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -126,6 +127,7 @@ def create_profile(sender, **kwargs):
         user_profile.node = Node.objects.get(local=True)
         user_profile.save()
 
+
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
@@ -137,6 +139,7 @@ def update_profile(sender, **kwargs):
     elif author.github == "" and author.has_github_task:
         author.has_github_task = False
         author.save()
+
 
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)
