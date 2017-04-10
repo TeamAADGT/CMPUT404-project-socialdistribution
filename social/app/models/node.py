@@ -32,41 +32,52 @@ class Node(models.Model):
     def __str__(self):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
-    def _get_author(self, uuid):
-        url = urlparse.urljoin(self.service_url, "author/" + str(uuid))
-        return requests.get(url, auth=(self.username, self.password))
+    def _get_author(self, author_id):
+        url = urlparse.urljoin(self.service_url, "author/" + str(author_id))
+        return requests.get(url, auth=self.auth())
 
-    def _get_post(self, uuid):
-        url = urlparse.urljoin(self.service_url, "posts/" + str(uuid))
-        return requests.get(url, auth=(self.username, self.password))
+    def auth(self):
+        return self.username, self.password
 
-    def get_author(self, uuid):
-        return self._get_author(uuid).json()
+    def _get_post(self, post_id):
+        url = urlparse.urljoin(self.service_url, "posts/" + str(post_id))
+        return requests.get(url, auth=self.auth())
 
-    def get_post(self,uuid):
-        return self._get_post(uuid).json()
+    def get_author(self, author_id):
+        return self._get_author(author_id).json()
+
+    def get_post(self, post_id):
+        return self._get_post(post_id).json()
 
     def get_post_comments(self, post_uuid):
-        all_comments = []
-        url = urlparse.urljoin(self.service_url, "posts/%s/comments" % str(post_uuid))
-        response = requests.get(url, auth=(self.username, self.password))
-        all_comments += response["comments"]
-        while "next" in response:
-            next_url = response["next"]
+        """
+        Returns a list of dicts that represents all of the Comments fetched for a particular remote Post,
+        traversing pagination if required.
+        """
+        base_url = urlparse.urljoin(self.service_url, "posts/%s/comments" % str(post_uuid))
+        json = requests.get(base_url, auth=self.auth()).json()
+
+        all_comments = json["comments"]
+
+        while "next" in json:
+            # Depending on how the other server interpreted the spec, a lack of a next page is rendered as either
+            # the next field not existing, or the next field being set to an empty value, so we gotta check for both
+            next_url = json["next"]
             if not next_url:
                 break
-            response = requests.get(url, auth=(self.username, self.password))
-            all_comments += response["comments"]
+
+            json = requests.get(next_url, auth=self.auth()).json()
+            all_comments += json["comments"]
 
         return all_comments
 
-    def get_author_friends(self, uuid):
-        url = self.service_url + "author/" + str(uuid) + "/friends"
-        return requests.get(url, auth=(self.username, self.password)).json()
+    def get_author_friends(self, author_id):
+        url = self.service_url + "author/" + str(author_id) + "/friends"
+        return requests.get(url, auth=self.auth()).json()
 
     def get_author_posts(self):
         url = self.service_url + "author/posts/"
-        response = requests.get(url, auth=(self.username, self.password)).json()
+        response = requests.get(url, auth=self.auth()).json()
         return response
         """
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
@@ -86,7 +97,7 @@ class Node(models.Model):
 
     def get_public_posts(self):
         url = self.service_url + "posts/"
-        response = requests.get(url, auth=(self.username, self.password)).json()
+        response = requests.get(url, auth=self.auth()).json()
         return response
         """
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
@@ -113,7 +124,7 @@ class Node(models.Model):
         json = response.json()
         posts_json = json["posts"]
         for post_json in posts_json:
-            if uuid.UUID(post_json["id"])==post_uuid:
+            if uuid.UUID(post_json["id"]) == post_uuid:
                 from social.app.models.post import Post
                 author_json = post_json['author']
                 from social.app.models.author import Author
@@ -138,10 +149,8 @@ class Node(models.Model):
                 return post, comments, count
         return None
 
-
-
-    def create_or_update_remote_author(self, uuid):
-        response = self._get_author(uuid)
+    def create_or_update_remote_author(self, author_id):
+        response = self._get_author(author_id)
 
         try:
             response.raise_for_status()
@@ -211,7 +220,7 @@ class Node(models.Model):
                     "url": target_author_uri,
                 }
             },
-            auth=(self.username, self.password))
+            auth=self.auth())
 
 
 # TODO This post_save hook is untested!
