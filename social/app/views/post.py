@@ -1,25 +1,21 @@
-import base64
 import logging
 from operator import attrgetter
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
+from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from django.views import View
 from django.views import generic
-from django.views.generic.detail import SingleObjectMixin, BaseDetailView
 
 from social.app.forms.comment import CommentForm
 from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
-from social.app.models.node import Node
 from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, \
-    get_remote_node_posts, get_all_private_posts, get_all_remote_node_posts
+    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts
 
 
 def all_posts(request):
@@ -98,7 +94,6 @@ def my_stream_posts(request):
         private_local_posts = get_all_local_private_posts() \
             .filter(Q(visible_to_author__uri=author_uri))
 
-
         posts = ((public_and_following_posts |
                   friend_posts |
                   foaf_posts |
@@ -115,72 +110,73 @@ def my_stream_posts(request):
         success_url = reverse('app:posts:index')
         return HttpResponseRedirect(success_url)
 
-# Post
-class DetailView(generic.DetailView):
-    """
-    """
+
+class PostDetailView(generic.DetailView):
+    def __init__(self, **kwargs):
+        super(PostDetailView, self).__init__(**kwargs)
+
+        # Used to cache the Comments fetched in get_object, for use in get_context_data
+        self.comments = []
+        # The Comments count returned from the remote Post call, used to determine whether we need past the first page
+        self.count = 0
+
     model = Post
     # TODO: This needs to filter out posts the current user can't see
     # TODO: If the post being viewed is a remote post, we need to fetch the latest version of it first
-    # Image posts can't be viewed directly, only as part of their parent post
+    # TODO: Needs to filter out only local image posts
     queryset = Post.objects.filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
 
     template_name = 'posts/detail.html'
 
     def get_context_data(self, **kwargs):
-        context = super(DetailView,self).get_context_data(**kwargs)
+        context = super(PostDetailView, self).get_context_data(**kwargs)
+
         post = self.object
-        if post.author.node.local:
-            context["comments"] = post.comments.all()
-        else:
-            if self.count > len(self.comments):
-                # make request for post comments and add to context
-                comments_json = post.author.node.get_post_comments(post.id)
+
+        # Don't do anything if Post wasn't found
+        if post:
+            if post.author.node.local:
+                context["comments"] = post.comments.all()
             else:
-                comments_json = self.comments
+                if self.count > len(self.comments):
+                    # We need to fetch all of the Post's Comments, including the ones past the first page we got
+                    comments_json = post.author.node.get_post_comments(post.id)
+                else:
+                    # This means the initial Post response contained all of the comments
+                    comments_json = self.comments
 
-            all_comments = []
-            for comment_json in comments_json:
-                author = Author(
-                    displayName=comment_json["author"]["displayName"]
-                )
-                comment_json["author"] = author
-                comment = Comment(
-                    author=author,
-                    comment=comment_json["comment"],
-                    published=comment_json["published"],
-                    id=comment_json["id"]
-                )
-                all_comments.append(comment)
+                all_comments = []
+                for comment_json in comments_json:
+                    # For compatibility with our existing views, we're instantiating models that won't get saved
+                    # to the database, and displaying those
+                    author = Author(
+                        displayName=comment_json["author"]["displayName"]
+                    )
+                    comment_json["author"] = author
+                    comment = Comment(
+                        author=author,
+                        comment=comment_json["comment"],
+                        published=comment_json["published"],
+                        id=comment_json["id"]
+                    )
+                    all_comments.append(comment)
 
-            context["comments"] = all_comments
+                context["comments"] = all_comments
 
         return context
 
     def get_object(self, queryset=None):
-        post = super(DetailView, self).get_object(queryset)
-        post_id = post.id
-        if not post.author.node.local:
-            # make remote request
-            # resave post
-            # save size and count self.comment_count
+        try:
+            post = super(PostDetailView, self).get_object(queryset)
+        except Post.DoesNotExist:
+            post = None
+
+        post_id = self.kwargs["pk"]
+
+        if post is None or not post.author.node.local:
             post, self.comments, self.count = post.author.node.create_or_update_remote_post(post_id)
-            # save extra info, and return it
 
         return post
-
-
-
-
-
-        return post
-
-
-def view_post_comments(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    context = dict()
-    context["all_comments"] = Comment.objects.filter(post_id=post.id)
-    return render(request, 'posts/comments.html', context)
 
 
 @login_required

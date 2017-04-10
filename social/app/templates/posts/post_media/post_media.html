@@ -26,5 +26,7 @@
     {% include 'posts/includes/post_story.html' %}
 </div>
 
-{# Begin posts's comments #}
-{% include 'app/includes/user_profile_post_comments.html' %}
+{%  if not short %}
+    {# Begin posts's comments #}
+    {% include 'app/includes/user_profile_post_comments.html' %}
+{% endif %}
