@@ -43,6 +43,8 @@ class Node(models.Model):
     def get_author_posts(self):
         url = self.service_url + "author/posts/"
         response = requests.get(url, auth=(self.username, self.password)).json()
+        return response
+        """
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
             return response
         else:
@@ -50,6 +52,7 @@ class Node(models.Model):
                 "%s did not conform to the expected response format! Returning an empty list of posts!"
                 % url)
             return []
+        """
 
     @classmethod
     def get_host_from_uri(cls, uri):
