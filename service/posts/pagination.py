@@ -14,7 +14,7 @@ class PostsPagination(pagination.PageNumberPagination):
 
     def get_paginated_response(self, data):
         for post in data:
-            post["next"] = urlparse.urljoin(post["source"], "comments")
+            post["next"] = urlparse.urljoin(post["source"]+"/", "comments")
             post["count"] = Comment.objects.filter(post_id=post["id"]).count()
             post["size"] = 50
 
