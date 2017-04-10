@@ -156,7 +156,7 @@ class Node(models.Model):
         json = response.json()
         posts_json = json["posts"]
         for post_json in posts_json:
-            if uuid.UUID(post_json["id"]) == post_uuid:
+            if post_json["id"] == post_uuid:
                 from social.app.models.post import Post
                 author_json = post_json['author']
                 from social.app.models.author import Author
@@ -166,8 +166,6 @@ class Node(models.Model):
                     id=uuid.UUID(post_json["id"]),
                     defaults={
                         'title': post_json['title'],
-                        'source': post_json['source'],
-                        'origin': post_json['origin'],
                         'description': post_json['description'],
                         'author': author,
                         'published': post_json['published'],

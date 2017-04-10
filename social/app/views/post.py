@@ -8,11 +8,13 @@ from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.views import generic
+from requests import HTTPError
 
 from social.app.forms.comment import CommentForm
 from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
+from social.app.models.node import Node
 from social.app.models.post import Post
 from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, \
     get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts
@@ -128,6 +130,54 @@ class PostDetailView(generic.DetailView):
 
     template_name = 'posts/detail.html'
 
+    def get_object(self, queryset=None):
+        try:
+            post = super(PostDetailView, self).get_object(queryset)
+        except Http404:
+            post = None
+
+        post_id = self.kwargs["pk"]
+        fetched_new_post = False
+
+        if post is None:
+            # No Author found -- so let's go ask our remote Nodes if they've got it
+            for node in Node.objects.filter(local=False):
+                try:
+                    (post, self.comments, self.count) = node.create_or_update_remote_post(post_id)
+                except HTTPError:
+                    # Something's wrong with this node, so let's skip it
+                    continue
+
+                if post is not None:
+                    # Found it!
+                    fetched_new_post = True
+                    break
+
+        if post is None:
+            # If we got here, no one has it
+            raise Http404()
+
+        post_node = post.author.node
+        if not post_node.local and not fetched_new_post:
+            try:
+                # Let's go get the latest version if we didn't already fetch it above
+                updated_post_tuple = post_node.create_or_update_remote_post(post_id)
+            except HTTPError:
+                # Remote server failed in a way that wasn't a 404, so let's just display our cached version
+                # with no comments
+                self.comments = []
+                self.count = 0
+                return post
+
+            if not updated_post_tuple or not updated_post_tuple[0]:
+                # Well, looks like they deleted this author. Awkward.
+                post.delete()
+                raise Http404()
+            else:
+                (post, self.comments, self.count) = updated_post_tuple
+
+        return post
+
     def get_context_data(self, **kwargs):
         context = super(PostDetailView, self).get_context_data(**kwargs)
 
@@ -164,19 +214,6 @@ class PostDetailView(generic.DetailView):
                 context["comments"] = all_comments
 
         return context
-
-    def get_object(self, queryset=None):
-        try:
-            post = super(PostDetailView, self).get_object(queryset)
-        except Post.DoesNotExist:
-            post = None
-
-        post_id = self.kwargs["pk"]
-
-        if post is None or not post.author.node.local:
-            post, self.comments, self.count = post.author.node.create_or_update_remote_post(post_id)
-
-        return post
 
 
 @login_required
