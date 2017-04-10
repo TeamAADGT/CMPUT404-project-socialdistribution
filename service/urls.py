@@ -46,7 +46,7 @@ service_urls = [
     url(r'^author/', include(author_urls)),
     url(r'^internal/', include(internal_urls, namespace="internal")),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^friendrequest/?', service.friendrequest.views.FriendRequestViewSet.as_view({'post': 'friendrequest'}),
+    url(r'^friendrequest/?$', service.friendrequest.views.FriendRequestViewSet.as_view({'post': 'friendrequest'}),
         name='friend-request'),
     url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/comments/?$', service.comments.views.CommentListView.as_view(),
         name='comment-detail'),
