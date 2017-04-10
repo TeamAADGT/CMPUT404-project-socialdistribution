@@ -246,12 +246,18 @@ def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
         try:
-            some_json = node.get_public_posts()
+            all_public_posts_jsons = node.get_all_public_posts(size=50)
+            for all_public_posts_json in all_public_posts_jsons:
+                some_json = all_public_posts_json
+
+                if len(some_json) == 0:
+                    continue
+
             for post_json in some_json['posts']:
                 author_json = post_json['author']
 
                 # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
-                if 'http' in author_json['id']:
+                    if author_json['id'].startswith('http'):
                     remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
                 else:
                     remote_author_id = uuid.UUID(author_json['id'])
@@ -264,7 +270,7 @@ def get_remote_node_posts():
                         'displayName': author_json['displayName'],
                     }
                 )
-                if 'http' in post_json['id']:
+                    if post_json['id'].startswith('http'):
                     post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
                 else:
                     post_id = uuid.UUID(post_json['id'])
@@ -280,6 +286,7 @@ def get_remote_node_posts():
                         'author': author,
                         'published': post_json['published'],
                         'content': post_json['content'],
+                            'content_type': post_json['contentType'],
                         'visibility': post_json['visibility'],
                     }
                 )
