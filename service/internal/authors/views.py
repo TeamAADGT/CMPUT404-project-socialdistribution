@@ -121,27 +121,7 @@ def friendrequest(request, pk=None):
     if target.node.local:
         current_author.add_friend_request(target)
     else:
-        current_author_uri = reverse("service:author-detail", kwargs={'pk': current_author.id}, request=request)
-        target_author_uri = urlparse.urljoin(target.node.service_url, 'author/' + str(target.id))
-
-        r = requests.post(
-            urlparse.urljoin(target.node.service_url, "friendrequest"),
-            json={
-                "query": "friendrequest",
-                "author": {
-                    "id": current_author_uri,
-                    "host": current_author.node.service_url,
-                    "displayName": current_author.displayName,
-                    "url": current_author_uri,
-                },
-                "friend": {
-                    "id": target_author_uri,
-                    "host": target.node.service_url,
-                    "displayName": target.displayName,
-                    "url": target_author_uri,
-                }
-            },
-            auth=(target.node.username, target.node.password))
+        r = target.node.post_friend_request(request, current_author, target)
 
         if 200 <= r.status_code < 300:
             # Success!
