@@ -9,13 +9,10 @@ from service.posts.serializers import PostSerializer
 from social.app.models.post import Post
 
 
-# TODO: Prettify this (ViewSets), fix examples, add examples (/service/author/posts, /service/author/{id}/posts)
+# TODO: If ViewSet used it goes from post to default - should be fixed
 # /service/posts/
 class PublicPostsList(generics.ListAPIView):
     """
-    Returns all local posts set to public visibility.
-    
-    Does not require authentication.
 
     Example response:
     <pre>
@@ -60,6 +57,11 @@ class PublicPostsList(generics.ListAPIView):
     # No permission class
 
     def get_queryset(self):
+        """
+        Returns all local posts set to public visibility.
+    
+        Does not require authentication.
+        """
         remote_node = self.request.user
 
         return get_local_posts(remote_node, public_only=True)
@@ -68,12 +70,6 @@ class PublicPostsList(generics.ListAPIView):
 # Defined as a ViewSet so a custom function can be defined to get around schema weirdness -- see all_posts()
 # /service/author/posts
 class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """
-    All the posts on the host are returned.
-
-    To see an example look at /service/posts/, only difference being that /service/author/posts
-    contains all posts.
-    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
@@ -86,87 +82,29 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     @list_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,), permission_classes=(IsAuthenticated,))
     def all_posts(self, request, *args, **kwargs):
+        """
+        All the posts on the host are returned.
+
+        Example response:
+        """
         # Needed to make sure this shows up in the schema -- collides with /posts/ otherwise
         return self.list(request, *args, **kwargs)
 
 
 # /service/posts/{id}/
 class SpecificPostsView(generics.ListAPIView):
-    """
-    Returns the local post with the specified ID, if any.
-    
-    If the local post has an attached image, and the current remote node has permission to view images, the post
-    containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
-
-    Example
-    <pre>
-    {
-      &nbsp&nbsp"count": 1,
-      &nbsp&nbsp"posts": [
-        &nbsp&nbsp&nbsp&nbsp{
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"title": "a",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"source": "http://127.0.0.1:8000/posts/2992bd35-d2a1-4f2f-8d75-ea626d8fc707/",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"origin": "http://127.0.0.1:8000/posts/2992bd35-d2a1-4f2f-8d75-ea626d8fc707/",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"description": "a",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"content": "a",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"categories": [],
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comments": [
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp{
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "0b12b470-5b74-4add-9726-a98fbde9c72c",
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comment": "abcd",
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T20:43:10.097387Z",
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown"
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp{
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "6080dfed-860a-45ff-bffc-e88605262122",
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"author": {
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"host": "http://127.0.0.1:8000/service/",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"displayName": "bob bob",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
-                &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"github": "https://github.com/tiegan"
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp},
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"comment": "defgh",
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T20:43:15.145294Z",
-              &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"contentType": "text/markdown"
-            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp}
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp],
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"published": "2017-04-09T20:26:34.762237Z",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"id": "2992bd35-d2a1-4f2f-8d75-ea626d8fc707",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/posts/2992bd35-d2a1-4f2f-8d75-ea626d8fc707/",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"visibility": "PRIVATE",
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"visibleTo": [],
-          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"unlisted": false
-        &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp}
-      &nbsp&nbsp&nbsp&nbsp],
-      &nbsp&nbsp&nbsp&nbsp"next": null,
-      &nbsp&nbsp&nbsp&nbsp"query": "posts",
-      &nbsp&nbsp&nbsp&nbsp"size": 100,
-      &nbsp&nbsp&nbsp&nbsp"previous": null
-    }
-    </pre>
-    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
+        """
+        Returns the local post with the specified ID, if any.
+    
+        If the local post has an attached image, and the current remote node has permission to view images, the post
+        containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
+        """
         post_id = self.kwargs["pk"]
         remote_node = self.request.user
 
@@ -175,18 +113,18 @@ class SpecificPostsView(generics.ListAPIView):
 
 # /service/author/{id}/posts
 class AuthorPostsView(generics.ListAPIView):
-    """
-    Returns all posts of an author that a user is allowed to see, can require authentication.
-
-    For an example of this look at /service/posts/, only differences being the author ID of
-    a post will always be the same and the visibility will vary.
-    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
+        """
+        Returns all posts of an author that a user is allowed to see, can require authentication.
+
+        For an example of this look at /service/posts/, only differences being the author ID of
+        a post will always be the same and the visibility will vary.
+        """
         author_id = self.kwargs["pk"]
         remote_node = self.request.user
 

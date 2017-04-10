@@ -13,7 +13,8 @@ from social.app.models.author import Author
 from social.app.models.utils import is_valid_uuid
 
 
-# /service/author/{id} (overrides other 2 as well if they aren't defined)
+# TODO: Get /service/author/{id} from method (allows for viewset to work)
+# /service/author/{id} (overrides other 3 as well if they aren't defined)
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows for the retrieval and modification of Authors that exist.
