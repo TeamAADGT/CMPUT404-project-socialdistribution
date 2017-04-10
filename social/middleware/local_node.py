@@ -1,3 +1,5 @@
+import urlparse
+
 from social.app.models.node import Node
 
 
@@ -16,11 +18,9 @@ class LocalNodeMiddleware(object):
         if not self.local_node_created:
             nodes = Node.objects.filter(local=True)
 
-            host = "http://" + request.get_host()
-            if host[-1] != "/":
-                host += "/"
-
-            service_url = host + "service/"
+            base_url = "https://" if request.is_secure() else "http://"
+            base_url += request.get_host()
+            service_url = urlparse.urljoin(base_url, "service/")
 
             if len(nodes) == 0:
                 node = Node(name="Local", host=request.get_host(), service_url=service_url, local=True)
