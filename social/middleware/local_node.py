@@ -18,16 +18,16 @@ class LocalNodeMiddleware(object):
         if not self.local_node_created:
             nodes = Node.objects.filter(local=True)
 
-            base_url = "https://" if request.is_secure() else "http://"
-            base_url += request.get_host()
+            host = request.get_host()
+            base_url = request.scheme + '://' + host
             service_url = urlparse.urljoin(base_url, "service/")
 
             if len(nodes) == 0:
-                node = Node(name="Local", host=request.get_host(), service_url=service_url, local=True)
+                node = Node(name="Local", host=host, service_url=service_url, local=True)
                 node.save()
             elif len(nodes) == 1:
                 node = nodes[0]
-                node.host = request.get_host()
+                node.host = host
                 node.service_url = service_url
                 node.save()
             else:
