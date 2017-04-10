@@ -1,10 +1,12 @@
 import logging
 import re
+import urlparse
 
 import requests
 from django.db import models
 from django.db.models.signals import post_save
 from requests import HTTPError
+from rest_framework.reverse import reverse
 
 
 class Node(models.Model):
@@ -90,7 +92,8 @@ class Node(models.Model):
             id=Author.get_id_from_uri(json["id"]),
             node=self,
             defaults={
-                'displayName': json['displayName']
+                'displayName': json['displayName'],
+                'activated': True
             }
         )
 
@@ -116,6 +119,32 @@ class Node(models.Model):
         return True
 
     is_authenticated = property(get_is_authenticated)
+
+    def post_friend_request(self, request, local_author, remote_author):
+        if remote_author.node != self or self.local:
+            raise Exception("Target's node must be the same remote node.")
+
+        current_author_uri = reverse("service:author-detail", kwargs={'pk': local_author.id}, request=request)
+        target_author_uri = urlparse.urljoin(self.service_url, 'author/' + str(remote_author.id))
+
+        return requests.post(
+            urlparse.urljoin(self.service_url, "friendrequest"),
+            json={
+                "query": "friendrequest",
+                "author": {
+                    "id": current_author_uri,
+                    "host": local_author.node.service_url,
+                    "displayName": local_author.displayName,
+                    "url": current_author_uri,
+                },
+                "friend": {
+                    "id": target_author_uri,
+                    "host": self.service_url,
+                    "displayName": remote_author.displayName,
+                    "url": target_author_uri,
+                }
+            },
+            auth=(self.username, self.password))
 
 
 # TODO This post_save hook is untested!
