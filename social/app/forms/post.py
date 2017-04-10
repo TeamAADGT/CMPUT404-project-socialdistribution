@@ -1,10 +1,12 @@
 import base64, uuid
 
 from django import forms
+from rest_framework.reverse import reverse
 
 from social.app.models.category import Category
 from social.app.models.post import Post
 from social.app.models.author import Author
+from service import urls
 
 
 class PostForm(forms.ModelForm):
@@ -38,17 +40,10 @@ class PostForm(forms.ModelForm):
         instance = super(PostForm, self).save(commit=False)
 
         instance.author = request.user.profile
-
-        if not (instance.source and instance.origin):
-            # Source:
-            # https://docs.djangoproject.com/en/1.10/ref/request-response/#django.http.HttpRequest.build_absolute_uri
-            url = request.build_absolute_uri(instance.get_absolute_url())
-
-            instance.source = url
-            instance.origin = url
+        instance.source = reverse('service:post-detail', kwargs = {'pk':instance.id}, request=request)
+        instance.origin = instance.source
 
         self.save_categories(instance, commit)
-
         self.save_visible_to(instance, commit)
 
         delete_child = False
