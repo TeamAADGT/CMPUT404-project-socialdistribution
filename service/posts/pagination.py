@@ -13,10 +13,20 @@ class PostsPagination(pagination.PageNumberPagination):
     page_size_query_param = "size"
 
     def get_paginated_response(self, data):
+        # The Comment page size when nested in a Post, as per spec
+        comment_page_size = 5
+
         for post in data:
+            comments_count = len(post["comments"])
+
+            if comments_count > comment_page_size:
+                # Only show the first page of Comments
+                post["comments"] = post["comments"][:comment_page_size]
+
+            # Always give the link to the first page of Comments, as per spec
             post["next"] = urlparse.urljoin(post["source"]+"/", "comments")
-            post["count"] = Comment.objects.filter(post_id=post["id"]).count()
-            post["size"] = 50
+            post["count"] = comments_count
+            post["size"] = comment_page_size
 
         return Response({
             "query": "posts",
