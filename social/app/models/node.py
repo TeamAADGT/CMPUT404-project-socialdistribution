@@ -90,7 +90,8 @@ class Node(models.Model):
             id=Author.get_id_from_uri(json["id"]),
             node=self,
             defaults={
-                'displayName': json['displayName']
+                'displayName': json['displayName'],
+                'activated': True
             }
         )
 

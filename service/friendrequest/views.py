@@ -10,10 +10,10 @@ from social.app.models.author import Author
 
 class FriendRequestViewSet(viewsets.ViewSet):
     serializer_class = FriendRequestSerializer
+    authentication_classes = (NodeBasicAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
-    @detail_route(methods=["POST"],
-                  authentication_classes=(NodeBasicAuthentication,),
-                  permission_classes=(IsAuthenticated,))
+    @detail_route(methods=["POST"])
     def friendrequest(self, request):
         """
         Example

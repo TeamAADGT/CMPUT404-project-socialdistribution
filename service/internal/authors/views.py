@@ -1,3 +1,5 @@
+import urlparse
+
 import requests
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -119,21 +121,24 @@ def friendrequest(request, pk=None):
     if target.node.local:
         current_author.add_friend_request(target)
     else:
+        current_author_uri = reverse("service:author-detail", kwargs={'pk': current_author.id}, request=request)
+        target_author_uri = urlparse.urljoin(target.node.service_url, 'author/' + str(target.id))
+
         r = requests.post(
-            target.node.service_url + "friendrequest/",
-            data={
+            urlparse.urljoin(target.node.service_url, "friendrequest"),
+            json={
                 "query": "friendrequest",
                 "author": {
-                    "id": reverse("service:author-detail", request=request),
+                    "id": current_author_uri,
                     "host": current_author.node.service_url,
                     "displayName": current_author.displayName,
-                    "url": reverse("service:author-detail", request=request),
+                    "url": current_author_uri,
                 },
                 "friend": {
-                    "id": target.node.service_url + "author/" + target.id,
+                    "id": target_author_uri,
                     "host": target.node.service_url,
                     "displayName": target.displayName,
-                    "url": target.node.service_url + "author/" + target.id,
+                    "url": target_author_uri,
                 }
             })
 
