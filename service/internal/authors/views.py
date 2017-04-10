@@ -140,7 +140,8 @@ def friendrequest(request, pk=None):
                     "displayName": target.displayName,
                     "url": target_author_uri,
                 }
-            })
+            },
+            auth=(target.node.username, target.node.password))
 
         if 200 <= r.status_code < 300:
             # Success!
