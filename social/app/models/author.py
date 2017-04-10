@@ -87,8 +87,8 @@ class Author(models.Model):
         self.followed_authors.add(author)
 
     def accept_friend_request(self, author):
-        if self.incoming_friend_requests.filter(id=author.id):
-            self.incoming_friend_requests.remove(author)
+        if author.outgoing_friend_requests.filter(id=self.id):
+            author.outgoing_friend_requests.remove(self)
             self.friends.add(author)
             self.followed_authors.add(author)
         else:
