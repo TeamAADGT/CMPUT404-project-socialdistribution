@@ -60,6 +60,7 @@ $(document).ready(function () {
     /* Show window for users that post is going to be visible to */
     function postVisibleTo() {
         $("#id_visible_to").parent(".form-group").css("display", "none");
+        $("#id_visible_to_author").parent(".form-group").css("display", "none");
 
         $("select#id_visibility")
             .change(function () {
@@ -68,10 +69,12 @@ $(document).ready(function () {
                     str += $(this).text();
                     if (str === "Private") {
                         $("#id_visible_to").parent(".form-group").show("slow");
+                        $("#id_visible_to_author").parent(".form-group").show("slow");
 
                     }
                     else {
                         $("#id_visible_to").parent(".form-group").hide("slow");
+                        $("#id_visible_to_author").parent(".form-group").hide("slow");
                     }
                 });
             })

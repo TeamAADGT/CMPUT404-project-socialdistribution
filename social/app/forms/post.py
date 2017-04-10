@@ -1,16 +1,17 @@
-import base64, uuid
+import base64, uuid, logging
 
 from django import forms
 
 from social.app.models.category import Category
 from social.app.models.post import Post
 from social.app.models.author import Author
+from social.app.models.authorlink import AuthorLink
 
 
 class PostForm(forms.ModelForm):
 
-    visible_to = forms.CharField(
-        label="Visible to",
+    visible_to_author = forms.CharField(
+        label="Visible to authors",
         required=False,
         help_text="Single author link per line",
         widget=forms.Textarea,
@@ -34,7 +35,7 @@ class PostForm(forms.ModelForm):
     )
 
     field_order = ["title", "description", "content_type", "content", "categories", "unlisted",
-                   "visibility", "visible_to", "upload_content_type", "upload_content" ]
+                   "visibility", "visible_to_author", "upload_content_type", "upload_content" ]
 
     def save(self, commit=True, *args, **kwargs):
         request = kwargs["request"]
@@ -53,7 +54,7 @@ class PostForm(forms.ModelForm):
 
         self.save_categories(instance, commit)
 
-        self.save_visible_to(instance, commit)
+        self.save_visible_to_author(instance, commit)
 
         delete_child = False
 
@@ -69,7 +70,7 @@ class PostForm(forms.ModelForm):
                     origin=instance.origin,
                     unlisted=instance.unlisted,
                     visibility=instance.visibility,
-                    visible_to=instance.visible_to.all(),
+                    visible_to_author=instance.visible_to_author.all(),
                     categories=instance.categories.all(),
                 )
 
@@ -104,19 +105,23 @@ class PostForm(forms.ModelForm):
 
                     instance.categories.add(category)
 
-    def save_visible_to(self, instance, commit=True):
-        authors_uris_string = self.cleaned_data["visible_to"]
+    def save_visible_to_author(self, instance, commit=True):
+        instance.visible_to_author.clear()
 
+        authors_uris_string = self.cleaned_data["visible_to_author"]
         if authors_uris_string:
-            for author_uri_string in authors_uris_string.split('\n'):
-                author_uuid = Author.get_id_from_uri(author_uri_string)
-                author_uuid = uuid.UUID(author_uuid)
+            for author_uri_string in authors_uris_string.splitlines():
+                author_uri_string = author_uri_string.strip()
+                try:
+                    Author.get_id_from_uri(author_uri_string)
+                    if not instance.visible_to_author.filter(uri=author_uri_string).exists():
+                        author_uri, created = AuthorLink.objects.get_or_create(uri=author_uri_string)
 
-                if not instance.visible_to.filter(id=author_uuid).exists():
-                    author, created = Author.objects.get_or_create(id=author_uuid)
-                    self.cleaned_data["visible_to"] = author_uuid
+                        instance.visible_to_author.add(author_uri)
+                except Exception as e:
+                    logging.error(e)
+                    logging.error("Invalid Author Link")
 
-                    instance.visible_to.add(author)
 
     # Source:
     # https://docs.djangoproject.com/en/1.10/ref/forms/validation/#cleaning-and-validating-fields-that-depend-on-each-other

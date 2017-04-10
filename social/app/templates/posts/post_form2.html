@@ -70,12 +70,12 @@
 
                 {# Begin visible to authors textarea #}
                 <div class="form-group">
-                    {% for error in form.visible_to.errors %}
+                    {% for error in form.visible_to_author.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
-                    <label for="{{ form.visible_to.id_for_label }}">{{ form.visible_to.label }}</label>
-                    {{ form.visible_to|add_class:'form-control' }}
-                    <span id="helpBlock" class="help-block">{{ form.visible_to.help_text }}</span>
+                    <label for="{{ form.visible_to_author.id_for_label }}">{{ form.visible_to_author.label }}</label>
+                    {{ form.visible_to_author|add_class:'form-control' }}
+                    <span id="helpBlock" class="help-block">{{ form.visible_to_author.help_text }}</span>
 
                 </div>
                 {# End of visible to authors textarea #}
