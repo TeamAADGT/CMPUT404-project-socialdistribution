@@ -28,8 +28,7 @@ class FriendRequestsListView(generic.ListView):
                     # Success!
                     logged_in_author.accept_friend_request(new_friend)
                 else:
-                    # This one didn't work. Oh well! No easy way to show an error without ruining other accepts
-                    pass
+                    r.raise_for_status()
 
         logged_in_author.save()
 
