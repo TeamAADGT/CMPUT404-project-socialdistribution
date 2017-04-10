@@ -13,9 +13,31 @@ from social.app.models.author import Author
 from social.app.models.utils import is_valid_uuid
 
 
+# TODO: Get /service/author/{id} from method (allows for viewset to work)
+# /service/author/{id} (overrides other 3 as well if they aren't defined)
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API endpoint that allows for the retrieval and modification of Authors.
+    API endpoint that allows for the retrieval and modification of Authors that exist.
+
+    Example successful response:
+    <pre>
+    {
+        &nbsp"id": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+        &nbsp"host": "http://127.0.0.1:8000/service/",
+        &nbsp"displayName": "Test User",
+        &nbsp"url": "http://127.0.0.1:8000/service/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c/",
+        &nbsp"friends": [
+            &nbsp&nbsp{
+                 &nbsp&nbsp&nbsp"url": "http://127.0.0.1:8000/service/author/90926f84-1672-4f0f-873e-f2f720ae28f2/"
+            &nbsp&nbsp}
+        &nbsp],
+        &nbsp"github": "https://github.com/tester",
+        &nbsp"firstName": "Test",
+        &nbsp"lastName": "User",
+        &nbsp"email": "test@ualberta.ca",
+        &nbsp"bio": "I am a tester."
+    }
+    </pre>
     """
 
     queryset = Author.objects.all()
@@ -23,6 +45,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
+    # /service/author/{id}/friends (GET)
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends(self, request, pk=None):
         """
@@ -59,6 +82,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
+    # /service/author/{id}/friends (POST)
     @detail_route(methods=["POST"], authentication_classes=(NodeBasicAuthentication,))
     def author_friends_search(self, request, pk=None):
         """
@@ -150,8 +174,23 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
+    # /service/author/{local_id}/friends/{other_host_name}/author/{other_id}
     @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
     def two_authors_are_friends(self, request, local_id=None, other_host_name=None, other_id=None):
+        """
+        Allows for seeing whether or not two authors on potentially different hosts are friends.
+
+        Example success query:
+
+            {
+                "query":"friends",
+                "friends": true,
+                "authors":[
+                    "http://127.0.0.1:8000/author/447c20fd-6fe2-4ea5-a9f7-2edabe2cc92c",
+                    "http://127.0.0.1:8000/author/90926f84-1672-4f0f-873e-f2f720ae28f2"
+                ]
+            }
+        """
         try:
             local_author = Author.objects.get(id=local_id)
         except ObjectDoesNotExist, e:

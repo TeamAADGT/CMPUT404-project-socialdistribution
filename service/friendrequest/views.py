@@ -8,7 +8,8 @@ from service.friendrequest.serializers import FriendRequestSerializer
 from social.app.models.author import Author
 
 
-class FriendRequestViewSet(viewsets.ViewSet):
+# /service/friendrequest/
+class FriendRequestViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FriendRequestSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -16,6 +17,8 @@ class FriendRequestViewSet(viewsets.ViewSet):
     @detail_route(methods=["POST"])
     def friendrequest(self, request):
         """
+        Returns an author and the person that author would like to befriend.
+
         Example
             
             {

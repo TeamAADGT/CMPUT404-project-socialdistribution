@@ -1,6 +1,7 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
+from rest_framework.decorators import detail_route
 
 from social.app.models.comment import Comment
 from social.app.models.post import Post
@@ -9,7 +10,9 @@ from service.comments.pagination import CommentsPagination
 from service.comments.serializers import CommentSerializer, CreateCommentSerializer
 
 
-class CommentListView(generics.ListCreateAPIView):
+# TODO: Don't break the "Try it out"
+# /service/posts/{id}/comments/ (both GET and POST)
+class CommentListView(viewsets.ReadOnlyModelViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination
 
@@ -19,7 +22,32 @@ class CommentListView(generics.ListCreateAPIView):
         else:
             return CreateCommentSerializer
 
+    @detail_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,))
     def get_queryset(self):
+        """
+        Returns all the comments on a given post
+
+        Example of a successful GET:
+
+            {        
+                "query": "comments",
+                "count": 1023,
+                "size": 50,
+                "next": null,
+                "previous": null,
+                "comments":[{
+                    "author":{
+                        "id":"http://127.0.0.1:5454/8d919f29c12e8f97bcbbd34cc908f19ab9496989",
+                        "host":"http://127.0.0.1:5454/",
+                        "displayName":"Greg"
+                    },
+                    "comment":"Sweet Trick Shot",
+                    "contentType":"text/markdown",
+                    "published":"2015-03-09T13:07:04+00:00",
+                    "id":"5471fe89-7697-4625-a06e-b3ad18577b72"
+                }]
+            }
+        """
         remote_node = self.request.user
         anonymous_node = remote_node is None or not remote_node.is_authenticated
 
@@ -44,7 +72,46 @@ class CommentListView(generics.ListCreateAPIView):
 
         return queryset
 
+    @detail_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,))
     def create(self, request, *args, **kwargs):
+        """
+        Will post a comment to the specified post if allowed to
+        Example of a POST:
+
+            {
+                "query": "addComment",
+                "post":"http://whereitcamefrom.com/posts/zzzzz",
+                "comment":{
+                    "author":{
+                        "id":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+                        "host":"http://127.0.0.1:5454/",
+                        "displayName":"Greg Johnson",
+                        "url":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+                        "github": "http://github.com/gjohnson"
+                    },
+                    "comment":"Sick Olde English",
+                    "contentType":"text/markdown",
+                    "published":"2015-03-09T13:07:04+00:00",
+                    "id":"de305d54-75b4-431b-adb2-eb6b9e546013"
+                }
+            }
+
+        If the POST is allowed:
+
+            {
+                "query": "addComment",
+                "success": true,
+                "message":"Comment Added"
+            }
+
+        If the POST isn't allowed:
+
+            {
+                "query": "addComment",
+                "success": false,
+                "message":"Comment not allowed"
+            }
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
