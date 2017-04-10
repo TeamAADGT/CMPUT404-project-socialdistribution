@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from datetime import datetime
 from social.app.models.node import Node
 
+
 class Author(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -20,6 +21,9 @@ class Author(models.Model):
     # https://github.com/join
     github = models.URLField(default='', blank=True)
 
+    first_name = models.TextField(default='', blank=True)
+    last_name = models.TextField(default='', blank=True)
+    email = models.EmailField(default='', blank=True)
     bio = models.TextField(default='', blank=True)
 
     ### Meta Attributes
@@ -56,7 +60,7 @@ class Author(models.Model):
         return len(self.friends.filter(id=remote_author_id)) > 0
 
     def has_outgoing_friend_request_for(self, author):
-        return self != author and len(self.outgoing_friend_requests.filter(id=author.id)) > 0
+        return self != author and self.outgoing_friend_requests.filter(id=author.id)
 
     def has_incoming_friend_request_from(self, author):
         return self != author and len(self.incoming_friend_requests.filter(id=author.id)) > 0
@@ -118,18 +122,34 @@ class Author(models.Model):
         return host_url + 'author/' + str(id)
 
 
+
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
-    if not user.is_staff and kwargs["created"]:
-        user_profile = Author(user=user)
-        user_profile.displayName = user_profile.user.first_name + ' ' + user_profile.user.last_name
-        user_profile.node = Node.objects.get(local=True)
-        user_profile.save()
+
+    if user.is_staff:
+        return
+
+    if kwargs["created"]:
+        # Creating a new User populates a new Author, if not already set
+        author = Author(user=user)
+        author.node = Node.objects.get(local=True)
+        author.save()
+    else:
+        author = user.profile
+
+    author.first_name = user.first_name
+    author.last_name = user.last_name
+    author.displayName = user.first_name + ' ' + user.last_name
+    author.email = user.email
+
+    author.save()
+
+
 
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
-    if author.github != "" and not author.has_github_task:
+    if author.github != "" and not author.has_github_task and author.node.local:
         time = datetime.now().replace(2018, 1, 1)
         get_github_activity(str(author.id), repeat=60, repeat_until=time)
         author.has_github_task = True
@@ -137,6 +157,7 @@ def update_profile(sender, **kwargs):
     elif author.github == "" and author.has_github_task:
         author.has_github_task = False
         author.save()
+
 
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)

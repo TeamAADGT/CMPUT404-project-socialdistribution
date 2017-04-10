@@ -1,11 +1,13 @@
-import json
-import re
 import logging
+import re
+import urlparse
 
 import requests
 from django.db import models
 from django.db.models.signals import post_save
-import logging
+from requests import HTTPError
+from rest_framework.reverse import reverse
+
 
 class Node(models.Model):
     """
@@ -19,7 +21,7 @@ class Node(models.Model):
     username = models.CharField(blank=True, max_length=512)
     password = models.CharField(blank=True, max_length=512)
 
-    requires_auth = models.BooleanField(default=True) # TODO: remove this attribute
+    requires_auth = models.BooleanField(default=True)  # TODO: remove this attribute
     share_images = models.BooleanField(default=True)
     share_posts = models.BooleanField(default=True)
 
@@ -29,9 +31,12 @@ class Node(models.Model):
     def __str__(self):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
-    def get_author(self, uuid):
+    def _get_author(self, uuid):
         url = self.service_url + "author/" + str(uuid)
-        return requests.get(url, auth=(self.username, self.password)).json()
+        return requests.get(url, auth=(self.username, self.password))
+
+    def get_author(self, uuid):
+        return self._get_author(uuid).json()
 
     def get_author_friends(self, uuid):
         url = self.service_url + "author/" + str(uuid) + "/friends"
@@ -68,27 +73,41 @@ class Node(models.Model):
             return []
         """
 
-
     def create_or_update_remote_author(self, uuid):
-        json = self.get_author(uuid).json()
+        response = self._get_author(uuid)
+
+        try:
+            response.raise_for_status()
+        except HTTPError:
+            if response.status_code == requests.codes.not_found:
+                # Author not found
+                return None
+            else:
+                raise
+
+        json = response.json()
+
         from social.app.models.author import Author
-        author = Author.objects.update_or_create(
+        (author, created) = Author.objects.update_or_create(
             id=Author.get_id_from_uri(json["id"]),
-            displayName=json["displayName"],
-            node=self
+            node=self,
+            defaults={
+                'displayName': json['displayName'],
+                'activated': True
+            }
         )
 
         if "github" in json:
             author.github = json["github"]
 
         if "firstName" in json:
-            author.user.first_name = json["firstName"]
+            author.first_name = json["firstName"]
 
         if "lastName" in json:
-            author.user.last_name = json["lastName"]
+            author.last_name = json["lastName"]
 
         if "email" in json:
-            author.user.email = json["email"]
+            author.email = json["email"]
 
         if "bio" in json:
             author.bio = json["bio"]
@@ -100,6 +119,32 @@ class Node(models.Model):
         return True
 
     is_authenticated = property(get_is_authenticated)
+
+    def post_friend_request(self, request, local_author, remote_author):
+        if remote_author.node != self or self.local:
+            raise Exception("Target's node must be the same remote node.")
+
+        current_author_uri = reverse("service:author-detail", kwargs={'pk': local_author.id}, request=request)
+        target_author_uri = urlparse.urljoin(self.service_url, 'author/' + str(remote_author.id))
+
+        return requests.post(
+            urlparse.urljoin(self.service_url, "friendrequest"),
+            json={
+                "query": "friendrequest",
+                "author": {
+                    "id": current_author_uri,
+                    "host": local_author.node.service_url,
+                    "displayName": local_author.displayName,
+                    "url": current_author_uri,
+                },
+                "friend": {
+                    "id": target_author_uri,
+                    "host": self.service_url,
+                    "displayName": remote_author.displayName,
+                    "url": target_author_uri,
+                }
+            },
+            auth=(self.username, self.password))
 
 
 # TODO This post_save hook is untested!
