@@ -19,7 +19,7 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
     visibleTo = serializers.HyperlinkedRelatedField(
         many=True,
         read_only=True,
-        source="visible_to",
+        source="visible_to_author",
         view_name="service:author-detail",
         lookup_field="pk"
     )
