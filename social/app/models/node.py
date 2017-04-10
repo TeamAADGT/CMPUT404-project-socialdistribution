@@ -1,5 +1,6 @@
 import logging
 import re
+import urllib
 import urlparse
 
 import requests
@@ -7,6 +8,8 @@ from django.db import models
 from django.db.models.signals import post_save
 from requests import HTTPError
 from rest_framework.reverse import reverse
+
+from social.app.models.utils import is_valid_url
 
 
 class Node(models.Model):
@@ -32,18 +35,18 @@ class Node(models.Model):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
     def _get_author(self, uuid):
-        url = self.service_url + "author/" + str(uuid)
+        url = urlparse.urljoin(self.service_url, 'author/' + str(uuid))
         return requests.get(url, auth=(self.username, self.password))
 
     def get_author(self, uuid):
         return self._get_author(uuid).json()
 
     def get_author_friends(self, uuid):
-        url = self.service_url + "author/" + str(uuid) + "/friends"
+        url = urlparse.urljoin(self.service_url, 'author/' + str(uuid) + '/friends')
         return requests.get(url, auth=(self.username, self.password)).json()
 
     def get_author_posts(self):
-        url = self.service_url + "author/posts/"
+        url = urlparse.urljoin(self.service_url, 'author/posts')
         response = requests.get(url, auth=(self.username, self.password)).json()
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
             return response
@@ -59,11 +62,41 @@ class Node(models.Model):
         m = re.search(p, uri)
         return m.group('host')
 
-    def get_public_posts(self):
-        url = self.service_url + "posts/"
+    '''
+    Get all the public posts, traversing through the 'next' link as well, if present.
+    '''
+    def get_all_public_posts(self, size=50):
+        posts_json = self.get_public_posts(size=size)
+        all_posts_jsons = [posts_json]
+        while True:
+            if 'next' in posts_json and is_valid_url(posts_json['next']):
+                posts_json = self.get_public_posts(next_url=posts_json['next'])
+                all_posts_jsons.append(posts_json)
+            else:
+                break
+        return all_posts_jsons
+
+    '''
+    Get all the posts from /service/posts
+    Declare a URL in next OR specify the page and size for the initial request.
+    If the next value is specified, given page and size values are ignored.
+    '''
+    def get_public_posts(self, page=1, size=50, next_url=None):
+        if next_url is None:
+            url = urlparse.urljoin(self.service_url, "posts")
+            params = dict()
+            if page is not None:
+                params['page'] = page
+            if size is not None:
+                params['size'] = size
+
+            if len(params) > 0:
+                url += '?' + urllib.urlencode(params)
+        else:
+            url = next_url
+
         response = requests.get(url, auth=(self.username, self.password)).json()
-        return response
-        """
+
         if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
             return response
         else:
@@ -71,7 +104,6 @@ class Node(models.Model):
                 "%s did not conform to the expected response format! Returning an empty list of posts!"
                 % url)
             return []
-        """
 
     def create_or_update_remote_author(self, uuid):
         response = self._get_author(uuid)
