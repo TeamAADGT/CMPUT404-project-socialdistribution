@@ -70,7 +70,7 @@ class FriendRequestViewSet(viewsets.ViewSet):
 
             if friend.has_outgoing_friend_request_for(remote_author):
                 # This is a friend confirmation request
-                friend.accept_friend_request(remote_author)
+                remote_author.accept_friend_request(friend)
             elif not friend.has_incoming_friend_request_from(remote_author):
                 # if the target already has a friend request pending, this is redundant
                 remote_author.add_friend_request(friend)

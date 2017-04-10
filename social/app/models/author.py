@@ -59,7 +59,7 @@ class Author(models.Model):
         return len(self.friends.filter(id=remote_author_id)) > 0
 
     def has_outgoing_friend_request_for(self, author):
-        return self != author and len(self.outgoing_friend_requests.filter(id=author.id)) > 0
+        return self != author and self.outgoing_friend_requests.filter(id=author.id)
 
     def has_incoming_friend_request_from(self, author):
         return self != author and len(self.incoming_friend_requests.filter(id=author.id)) > 0
@@ -87,8 +87,8 @@ class Author(models.Model):
         self.followed_authors.add(author)
 
     def accept_friend_request(self, author):
-        if author.outgoing_friend_requests.filter(id=self.id):
-            author.outgoing_friend_requests.remove(self)
+        if self.incoming_friend_requests.filter(id=author.id):
+            self.incoming_friend_requests.remove(author)
             self.friends.add(author)
             self.followed_authors.add(author)
         else:
