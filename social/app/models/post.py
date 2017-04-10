@@ -106,7 +106,7 @@ class Post(models.Model):
         return ""
 
     def categories_list(self):
-        return [cat.name for cat in self.categories.all()]
+        return [cat.name for cat in self.categories.order_by('name')]
 
     def categories_string(self):
         names = self.categories_list()
