@@ -88,12 +88,10 @@ class PostForm(forms.ModelForm):
         return instance
 
     def save_categories(self, instance):
-        instance.categories.clear()
-
         categories_string = self.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                instance.categories.create(name=name)
+        category_names = categories_string.split(' ') if categories_string else []
+        categories = [Category.objects.get_or_create(name=name)[0] for name in category_names]
+        instance.categories.set(categories)
 
     def save_visible_to_author(self, instance):
         instance.visible_to_author.clear()
