@@ -15,7 +15,8 @@ from social.app.forms.post import PostForm
 from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.post import Post
-from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts, get_all_private_posts
+from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts, \
+    get_all_private_posts, get_all_remote_node_posts
 
 
 
@@ -49,7 +50,7 @@ def my_stream_posts(request):
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
         try:
-            get_remote_node_posts()
+            get_all_remote_node_posts()
         except Exception, e:
             logging.error(e)
 

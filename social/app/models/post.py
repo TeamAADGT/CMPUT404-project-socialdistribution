@@ -230,3 +230,54 @@ def get_remote_node_posts():
             logging.error(e)
             logging.warn('Skipping a post retrieved from ' + node.host)
             continue
+
+# TODO: get posts from service/author/posts/
+# This gets all remote posts from:
+# /service/author/posts/
+def get_all_remote_node_posts():
+    node_posts = list()
+    for node in Node.objects.filter(local=False):
+        try:
+            some_json = node.get_author_posts()
+            for post_json in some_json['posts']:
+                author_json = post_json['author']
+
+                # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
+                if 'http' in author_json['id']:
+                    remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                else:
+                    remote_author_id = uuid.UUID(author_json['id'])
+
+                # Add remote author to DB
+                author, created = Author.objects.update_or_create(
+                    id=remote_author_id,
+                    defaults={
+                        'node': node,
+                        'displayName': author_json['displayName'],
+                    }
+                )
+                if 'http' in post_json['id']:
+                    post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
+                else:
+                    post_id = uuid.UUID(post_json['id'])
+
+                # Add remote post to DB
+                post, created = Post.objects.update_or_create(
+                    id=post_id,
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
+                node_posts.append(post)
+
+        except Exception, e:
+            logging.error(e)
+            logging.warn('Skipping a post retrieved from ' + node.host)
+            continue
