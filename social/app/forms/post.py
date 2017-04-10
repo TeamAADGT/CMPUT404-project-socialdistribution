@@ -11,7 +11,6 @@ from service import urls
 
 
 class PostForm(forms.ModelForm):
-
     visible_to_author = forms.CharField(
         label="Visible to authors",
         required=False,
@@ -37,7 +36,7 @@ class PostForm(forms.ModelForm):
     )
 
     field_order = ["title", "description", "content_type", "content", "categories", "unlisted",
-                   "visibility", "visible_to_author", "upload_content_type", "upload_content" ]
+                   "visibility", "visible_to_author", "upload_content_type", "upload_content"]
 
     def save(self, *args, **kwargs):
         # NOTE: due to complexities with categories, and visible_to_author, commit=False is not respected!
@@ -46,8 +45,6 @@ class PostForm(forms.ModelForm):
         instance = super(PostForm, self).save(commit=False)
 
         instance.author = request.user.profile
-        instance.source = reverse('service:post-detail', kwargs = {'pk':instance.id}, request=request)
-        instance.origin = instance.source
 
         instance.save()
         self.save_categories(instance)
@@ -109,7 +106,6 @@ class PostForm(forms.ModelForm):
                 except Exception as e:
                     logging.error(e)
                     logging.error("Invalid Author Link")
-
 
     # Source:
     # https://docs.djangoproject.com/en/1.10/ref/forms/validation/#cleaning-and-validating-fields-that-depend-on-each-other

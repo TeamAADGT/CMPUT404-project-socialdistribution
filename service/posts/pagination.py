@@ -2,6 +2,8 @@ import urlparse
 
 from rest_framework import pagination
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
 from social.app.models.comment import Comment
 
 
@@ -24,7 +26,7 @@ class PostsPagination(pagination.PageNumberPagination):
                 post["comments"] = post["comments"][:comment_page_size]
 
             # Always give the link to the first page of Comments, as per spec
-            post["next"] = urlparse.urljoin(post["source"]+"/", "comments")
+            post["next"] = reverse('service:post-comments-list', kwargs={'pk': post["id"]}, request=self.request)
             post["count"] = comments_count
             post["size"] = comment_page_size
 
