@@ -207,7 +207,7 @@ class Post(models.Model):
         }
 
         url = urlparse.urljoin(remote_node.service_url, "posts/%s/comments" % self.id)
-        response = requests.post(url, json=json)
+        response = requests.post(url, json=json, auth=remote_node.auth())
         response.raise_for_status()
 
         comment.save()

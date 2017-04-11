@@ -1,5 +1,6 @@
 from rest_framework import generics, status, filters, viewsets, mixins
 from rest_framework.generics import CreateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from social.app.models.comment import Comment
@@ -11,6 +12,8 @@ from service.comments.serializers import CommentSerializer, CreateCommentSeriali
 
 class CommentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (NodeBasicAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
     pagination_class = CommentsPagination
     filter_backends = (filters.OrderingFilter,)
     ordering_fields = ('published', 'contentType',)
