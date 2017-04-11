@@ -32,8 +32,28 @@ Contributors:
     Gaylord Mbuyi
     Tiegan Bonowicz
 
-Project API
+Team Members
 ============
+
+* Adam Ford (ajford@ualberta.ca)
+* Alanna McLafferty (mclaffer@ualberta.ca)
+* David Yee (dvyee@ualberta.ca
+* Gaylord Mbuyi (gaylord@ualberta.ca)
+* Tiegan Bonowicz (tiegan@ualberta.ca)
+
+Project API
+===========
+
+* Service Address: `https://aadgt-404-master.herokuapp.com/service/`
+* Port: 443
+* Hostname: `aadgt-404-master.herokuapp.com`
+* Prefix: `service/`
+
+Basic Authentication: Credentials are generated on a node-by-node basis. Please contact one 
+of the team members listed above to add your node.
+
+API Documentation
+=================
 
 View API documentation at: https://aadgt-404-master.herokuapp.com/service/docs/
 
