@@ -23,12 +23,38 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
 
-    @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Returns details about a local Author specified by id.
+        
+        ### Parameters
+        * id: The ID of the local Author.
+        
+        ### Expected Successful Response
+            {
+                "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                "host": "http://127.0.0.1:8000/service/",
+                "displayName": "Adam Ford",
+                "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                "friends": [],
+                "github": "",
+                "firstName": "Adam",
+                "lastName": "Ford",
+                "email": "a@a.com",
+                "bio": ""
+            }
+        """
+        return super(AuthorViewSet, self).retrieve(request, *args, **kwargs)
+
+    @detail_route(methods=["GET"])
     def author_friends(self, request, pk=None):
         """
         Returns a (possibly empty) list of  Authors that are friends with the user specified by id.
         
-        Example successful response:
+        ### Parameters
+        * id: The ID of the Author (required)
+        
+        ### Example Successful Response
         
             {
                 "query":"friends",
@@ -38,7 +64,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
                 ]
             }
         
-        Example failed response:
+        ### Example Failed Response
         
             {
                 "detail": "Author not found."
@@ -59,19 +85,36 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
-    @detail_route(methods=["POST"], authentication_classes=(NodeBasicAuthentication,))
+    @detail_route(methods=["POST"])
     def author_friends_search(self, request, pk=None):
         """
         Returns a (possibly empty) list of Authors that are friends with the 
         user specified by id. The list of authors returned is bounded by the 
         supplied list of authors; only provided authors that are friends with 
         the given author are returned in the response.
+        
+        ### Parameters
+        * id: The ID of the Author (required)
+        
+        ### Example Input
+        
+            {
+                "query":"friends", # Must be set to "friends". (required)
+                "author":"cee6b20f-f821-41ac-a2d8-e300756ddd9c", # ID of the Author (required)
+                # Array of Author IDs (required, may be empty)
+                "authors": [
+                    "http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
+                    "http://127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891",
+                    "...",
+                ]
+            }
 
-        Example successful response:
+
+        ### Example Successful Response
 
             {
                 "query":"friends",
-                "author":"<authorid>"
+                "author":"cee6b20f-f821-41ac-a2d8-e300756ddd9c"
                 "authors":[
                     "http://host3/author/de305d54-75b4-431b-adb2-eb6b9e546013",
                     "http://host2/author/ae345d54-75b4-431b-adb2-fb6b9e547891"
@@ -150,11 +193,32 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             ]
         }, status=status.HTTP_200_OK)
 
-    @detail_route(methods=["GET"], authentication_classes=(NodeBasicAuthentication,))
+    @detail_route(methods=["GET"])
     def two_authors_are_friends(self, request, local_id=None, other_host_name=None, other_id=None):
+        """
+        Returns whether this server thinks two Authors, one on our server, and one on any server, are friends.
+        
+        ### Parameters
+        * local_id: The ID of the Author local to this server. (required)
+        * other_host_name: The host name of the server that's the home of the Author with id of other_id. (required)
+        * other_id: The ID of the other Author. May be local to this server, or another server. (required)
+        
+        ### Example Successful Response
+        
+            {
+                "query":"friends",
+                "authors":[
+                    "http://127.0.0.1:5454/author/de305d54-75b4-431b-adb2-eb6b9e546013",
+                    "http://127.0.0.1:5454/author/ae345d54-75b4-431b-adb2-fb6b9e547891"
+                ],
+                "friends": true
+            }
+        
+        Note: `"friends"` will be set to `false` if the Authors are not friends
+        """
         try:
             local_author = Author.objects.get(id=local_id)
-        except ObjectDoesNotExist, e:
+        except ObjectDoesNotExist:
             return Response({
                 "query": "friends",
                 "error": "Author %s does not exist" % str(local_id),

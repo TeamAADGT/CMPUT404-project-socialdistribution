@@ -25,13 +25,13 @@ class InternalAPIViewSet(viewsets.GenericViewSet):
         ### Parameters
         * id: The ID of the author to be followed. (UUID, required)
         
-        Usage on `/social/app/templates/app/author_detail.html'.
-
-        ### Example Response
+        ### Example Successful Response
 
             { 
                 "followed_author": "http://site/service/author/62309fbb-72c5-4dce-bf65-4a3bf9b92f09"
             }
+            
+        Used on `/social/app/templates/app/author_detail.html`.
         """
         follower = request.user.profile
 
@@ -72,16 +72,16 @@ class InternalAPIViewSet(viewsets.GenericViewSet):
         
         For local AJAX use only.
         
-        Usage on `/social/app/templates/app/author_detail.html'.
-        
         ### Parameters
         * id: The ID of the author to be unfollowed. (UUID, required)
         
-        ### Example Response
+        ### Example Successful Response
 
             { 
                 "unfollowed_author": "http://site/service/author/62309fbb-72c5-4dce-bf65-4a3bf9b92f09"
             }
+            
+        Used on `/social/app/templates/app/author_detail.html`.
         """
         unfollower = request.user.profile
 
@@ -124,16 +124,16 @@ class InternalAPIViewSet(viewsets.GenericViewSet):
         
         For local AJAX use only.
         
-        Usage on `/social/app/templates/app/author_detail.html'.
-        
         ### Parameters
         * id: The ID of the author to be sent a friend request. (UUID, required)
         
-        ### Example Response
+        ### Example Successful Response
 
             { 
                 "friend_requested_author": "http://site/service/author/62309fbb-72c5-4dce-bf65-4a3bf9b92f09"
             }
+            
+        Used on `/social/app/templates/app/author_detail.html`.
         """
         current_author = request.user.profile
 

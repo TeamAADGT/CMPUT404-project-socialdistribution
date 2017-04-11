@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from service.authors.serializers import SimpleAuthorSerializer, UnknownAuthorSerializer
 from service.comments.serializers import CommentSerializer
+from social.app.models.authorlink import AuthorLink
 from social.app.models.post import Post
 
 
@@ -20,12 +21,9 @@ class PostSerializer(serializers.HyperlinkedModelSerializer):
 
     contentType = serializers.CharField(source="content_type", read_only=True)
 
-    visibleTo = serializers.HyperlinkedRelatedField(
-        many=True,
+    visibleTo = serializers.ListField(
+        source='visible_to_author_list',
         read_only=True,
-        source="visible_to_author",
-        view_name="service:author-detail",
-        lookup_field="pk"
     )
 
     categories = serializers.ListField(

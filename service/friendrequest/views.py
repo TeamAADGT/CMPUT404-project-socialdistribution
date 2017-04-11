@@ -16,23 +16,29 @@ class FriendRequestViewSet(viewsets.ViewSet):
     @detail_route(methods=["POST"])
     def friendrequest(self, request):
         """
-        Example
+        Accepts a friend request sent to a local Author from a remote Author,
+        or confirms a friend request originally sent from a local Author to a remote Author.
+        
+        ### Example Input
             
             {
                 "query":"friendrequest",
-                "author": {
+                "author": { # The Author on your server
                     "id":"http://127.0.0.1:8000/author/4025b419-5a3c-4538-9220-d55a2c0cad7e",
                     "host":"http://127.0.0.1:8000/",
                     "displayName":"Nice Raccoon",
                     "url":"http://127.0.0.1:8000/author/4025b419-5a3c-4538-9220-d55a2c0cad7e",
                 },
-                "friend": {
+                "friend": { # The Author on this server
                     "id":"http://127.0.0.1:8000/author/bd81ae42-98b5-46f6-b87f-b60cf3a39734",
                     "host":"http://127.0.0.1:8000/",
                     "displayName":"Exceptional Meow",
                     "url":"http://127.0.0.1:8000/author/4025b419-5a3c-4538-9220-d55a2c0cad7e",
                 }
             }
+            
+        # Example Successful Response
+        No content.
         """
 
         remote_node = request.user

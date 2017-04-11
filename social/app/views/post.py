@@ -31,7 +31,8 @@ def all_posts(request):
     context["user_posts"] = \
         (Post.objects
          .filter(visibility="PUBLIC")
-         .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+         .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+         .filter(unlisted=False)
          .order_by('-published'))
 
     return render(request, 'app/index.html', context)
@@ -95,7 +96,8 @@ def my_stream_posts(request):
                   friend_posts |
                   foaf_posts |
                   private_local_posts)
-                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                 .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+                 .filter(unlisted=False)
                  .distinct())
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
@@ -271,10 +273,15 @@ def post_update(request, pk):
     if post.author != request.user.profile:
         return HttpResponse(status=401)
 
+    if post.child_post:
+        upload_content_type = post.child_post.content_type
+    else:
+        upload_content_type = ""
+
     form = PostForm(request.POST or None, request.FILES or None,
                     instance=post,
                     initial={
-                        'upload_content_type': post.child_post.content_type if post.child_post else "",
+                        'upload_content_type': upload_content_type,
                         'categories': post.categories_string(),
                         'visible_to_author': post.visible_to_authors_string(),
                     })

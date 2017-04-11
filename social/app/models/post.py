@@ -104,9 +104,15 @@ class Post(models.Model):
         if self.content_type == "text/markdown":
             parser = CommonMark.Parser()
             renderer = CommonMark.HtmlRenderer(options={'safe': True})
-            return renderer.render(parser.parse(self.content))
+            return renderer.render(parser.parse(self.content))\
+                .replace('data:image/jpg%3B', 'data:image/jpg;')\
+                .replace('data:image/jpeg%3B', 'data:image/jpeg;') \
+                .replace('data:image/png%3B', 'data:image/png;')
 
         return ""
+
+    def visible_to_author_list(self):
+        return [author_link.uri for author_link in self.visible_to_author.all()]
 
     def categories_list(self):
         return [cat.name for cat in self.categories.order_by('name')]
@@ -324,8 +330,6 @@ def get_remote_node_posts():
                         id=post_id,
                         defaults={
                             'title': post_json['title'],
-                            'source': post_json['source'],
-                            'origin': post_json['origin'],
                             'description': post_json['description'],
                             'author': author,
                             'published': post_json['published'],
@@ -378,13 +382,12 @@ def get_all_remote_node_posts():
                     id=post_id,
                     defaults={
                         'title': post_json['title'],
-                        'source': post_json['source'],
-                        'origin': post_json['origin'],
                         'description': post_json['description'],
                         'author': author,
                         'published': post_json['published'],
                         'content': post_json['content'],
                         'visibility': post_json['visibility'],
+                        'content_type': post_json['contentType'],
                     }
                 )
                 node_posts.append(post)
@@ -429,13 +432,12 @@ def get_all_remote_node_posts():
                     id=post_id,
                     defaults={
                         'title': post_json['title'],
-                        'source': post_json['source'],
-                        'origin': post_json['origin'],
                         'description': post_json['description'],
                         'author': author,
                         'published': post_json['published'],
                         'content': post_json['content'],
                         'visibility': post_json['visibility'],
+                        'content_type': post_json['contentType'],
                     }
                 )
                 node_posts.append(post)

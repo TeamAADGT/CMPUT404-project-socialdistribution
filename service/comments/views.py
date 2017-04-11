@@ -1,4 +1,4 @@
-from rest_framework import generics, status, filters
+from rest_framework import generics, status, filters, viewsets, mixins
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 
@@ -9,7 +9,7 @@ from service.comments.pagination import CommentsPagination
 from service.comments.serializers import CommentSerializer, CreateCommentSerializer
 
 
-class CommentListView(generics.ListCreateAPIView):
+class CommentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination
     filter_backends = (filters.OrderingFilter,)
@@ -47,7 +47,91 @@ class CommentListView(generics.ListCreateAPIView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        """
+        Returns a list of Comments written on the Post specified by id.
+        
+        ### Parameters
+        * id: The id of the desired Post.
+        
+        ### Example Successful Response
+            {
+              "count": 3,
+              "comments": [
+                {
+                  "id": "578e6948-130b-4976-bca1-7785f9ac8dd7",
+                  "author": {
+                    "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "host": "http://127.0.0.1:8000/service/",
+                    "displayName": "Adam Ford",
+                    "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "github": ""
+                  },
+                  "comment": "Test Comment 3",
+                  "published": "2017-04-11T06:44:18.709000Z",
+                  "contentType": "text/markdown"
+                },
+                {
+                  "id": "9537c473-343e-41dd-a3f8-851684f3eb26",
+                  "author": {
+                    "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "host": "http://127.0.0.1:8000/service/",
+                    "displayName": "Adam Ford",
+                    "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "github": ""
+                  },
+                  "comment": "Test Comment 2",
+                  "published": "2017-04-11T06:44:13.358000Z",
+                  "contentType": "text/markdown"
+                },
+                {
+                  "id": "67f65533-4fbc-44d5-8582-a0f6f35947cf",
+                  "author": {
+                    "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "host": "http://127.0.0.1:8000/service/",
+                    "displayName": "Adam Ford",
+                    "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "github": ""
+                  },
+                  "comment": "Test Comment 1",
+                  "published": "2017-04-11T06:44:08.684000Z",
+                  "contentType": "text/markdown"
+                }
+              ],
+              "next": null,
+              "query": "comments",
+              "size": 100,
+              "previous": null
+            }
+        """
+        return super(CommentsViewSet, self).list(request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
+        """
+        Adds a comment by an Author on your server on the Post specified by id on our server
+        
+        ### Parameters
+        * id: The id of the desired Post.
+        
+        ### Expected Input
+            {
+                "query":"addComment", # Must be equal to "addComment". (required)
+                "post":"http://whereitcamefrom.com/posts/zzzzz", # The URI of the Post. (required)
+                "comment":{
+                    "author":{
+                        "id":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471", # The URI of the Author who wrote the comment. (required)
+                        "host":"http://127.0.0.1:5454/", # The base service URL of this Author. (required)
+                        "displayName":"Greg Johnson", # The displayName of this Author. (required)
+                        "url":"http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471", # The URI of the Author who wrote the comment. (required)
+                        "github":"http://github.com/gjohnson" # The GitHub profile URL of this Author. (optional)
+                    },
+                    "comment":"Sick Olde English", # The Markdown text of this comment. (required)
+                    "contentType":"text/markdown", # The content type of this comment. Must be equal to "text/markdown". (required)
+                    "published":"2015-03-09T13:07:04+00:00", # The ISO 8601 timestamp of when this comment was written. (required)
+                    "id":"de305d54-75b4-431b-adb2-eb6b9e546013" # The ID of this comment. (required)
+                }
+            }
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
