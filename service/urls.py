@@ -51,7 +51,8 @@ service_urls = [
     url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/comments/?$', service.comments.views.CommentListView.as_view(),
         name='post-comments-list'),
     url(r'^posts/?$', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
-    url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/?$', service.posts.views.SpecificPostsView.as_view(),
+    url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/?$',
+        service.posts.views.SpecificPostsViewSet.as_view({'get': 'retrieve', 'post': 'create'}),
         name='post-detail'),
 ]
 

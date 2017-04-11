@@ -38,6 +38,20 @@ class SimpleAuthorSerializer(serializers.ModelSerializer):
         fields = ('id', 'host', 'displayName', 'url', 'github')
 
 
+class UnknownAuthorSerializer(serializers.Serializer):
+    """
+    Used in input cases where we don't necessarily know about a remote Author yet, so it doesn't make sense
+    to use a ModelSerializer
+    """
+    id = serializers.URLField()
+    host = serializers.URLField()
+    url = serializers.URLField()
+    github = serializers.URLField(
+        required=False,
+        allow_blank=True
+    )
+
+
 class AuthorSerializer(serializers.ModelSerializer):
     id = serializers.HyperlinkedIdentityField(
         view_name='service:author-detail', read_only=True, lookup_field='pk')

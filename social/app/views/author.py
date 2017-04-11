@@ -17,7 +17,8 @@ from social.app.forms.user_profile import UserFormUpdate
 from social.app.models.author import Author
 from social.app.models.node import Node
 from social.app.models.post import Post
-from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
+from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, \
+    get_all_remote_node_posts
 
 
 def get_posts_by_author(request, pk):
@@ -43,7 +44,7 @@ def get_posts_by_author(request, pk):
 
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
-        node_posts = get_remote_node_posts()
+        get_all_remote_node_posts()
 
         # case I: posts.visibility=public
         public_posts = get_all_public_posts()

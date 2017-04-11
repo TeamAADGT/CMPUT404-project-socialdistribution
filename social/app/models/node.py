@@ -80,6 +80,20 @@ class Node(models.Model):
         response.raise_for_status()
         return verify_friends_of_endpoint_output(url, response.json())
 
+    def get_if_authors_are_friends(self, first_author_id, second_author_uri):
+        from social.app.models.author import Author
+        (second_author_host, second_author_id) = Author.parse_uri(second_author_uri)
+        second_author_host = second_author_host.replace('http://', '', 1).replace('https://', '', 1)
+
+        if second_author_host[-1] != "/":
+            second_author_host += "/"
+
+        url = (self.service_url
+               + "author/" + str(first_author_id)
+               + "/friends/" + second_author_host + str(second_author_id))
+
+        return requests.get(url, auth=(self.username, self.password)).json()["friends"]
+
     def get_author_posts(self):
         url = urlparse.urljoin(self.service_url, 'author/posts')
         response = requests.get(url, auth=self.auth())
