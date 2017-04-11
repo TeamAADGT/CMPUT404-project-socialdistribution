@@ -221,7 +221,7 @@ def get_all_foaf_posts(author):
             for author_id in authors_json:
                 if author_id.startswith('http'):
                     author_id = Author.get_id_from_uri(author_id)
-                remote_author = Author.objects.filter(Q(author__followed_authors__id=author_id))
+                remote_author = Author.objects.filter(Q(followed_authors__id=author_id))
                 if remote_author is not None:
                     foafs.update(author_id)
 
