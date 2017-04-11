@@ -36,7 +36,11 @@ class Node(models.Model):
 
     def _get_author(self, author_id):
         url = urlparse.urljoin(self.service_url, "author/" + str(author_id))
-        return requests.get(url, auth=self.auth())
+        response = requests.get(url, auth=self.auth())
+        if response.status_code != 200:
+            # Attempt trailing slash (required for salty-plains-60914)
+            response = requests.get(url + '/', auth=self.auth())
+        return response
 
     def auth(self):
         return self.username, self.password
@@ -171,6 +175,14 @@ class Node(models.Model):
                 author_json = post_json['author']
                 author_id = Author.get_id_from_uri(author_json['id'])
                 author = self.create_or_update_remote_author(author_id)
+
+                if author is None:
+                    try:
+                        author = Author.objects.get(id=author_id)
+                    except Exception as e:
+                        logging.error(e)
+                        logging.error("Author not found in local cache!")
+
                 post, created = Post.objects.update_or_create(
                     id=post_json["id"],
                     defaults={
@@ -180,6 +192,7 @@ class Node(models.Model):
                         'published': post_json['published'],
                         'content': post_json['content'],
                         'visibility': post_json['visibility'],
+                        'content_type': post_json['contentType'],
                     }
                 )
 
