@@ -1,4 +1,5 @@
 import base64
+import urlparse
 import uuid
 
 from datetime import datetime, time, date
@@ -20,9 +21,9 @@ class PostsTestCase(APITestCase):
                                    service_url="http://www.local.com/service/", local=True,
                                    incoming_username='local', incoming_password='password', )
 
-        authorized_node = Node.objects.create(name='Remote Node', host='http://www.remote.com/',
-                                              service_url='http://www.remote.com/service/', local=False,
-                                              incoming_username='remote', incoming_password='password', )
+        self.authorized_node = Node.objects.create(name='Remote Node', host='http://www.remote.com/',
+                                                   service_url='http://www.remote.com/service/', local=False,
+                                                   incoming_username='remote', incoming_password='password', )
 
         adam_user = User.objects.create_user("adam", "adam@test.com", "pass1")
         bob_user = User.objects.create_user("bob", "bob@test.com", "pass2")
@@ -39,7 +40,7 @@ class PostsTestCase(APITestCase):
 
         # Remote Users
         self.chris = chris_user.profile
-        self.chris.node = authorized_node
+        self.chris.node = self.authorized_node
         self.chris.save()
 
         dates = [  # Creates several dates from oldest to newest
@@ -190,8 +191,8 @@ class PostsTestCase(APITestCase):
 
         self.local_public_posts = filter(lambda p: p.visibility == 'PUBLIC', self.all_local_posts)
         self.local_public_posts_sorted = sorted(self.local_public_posts, key=lambda p: p.published, reverse=True)
-        self.local_adam_posts = filter(lambda p: p.author == self.adam and p.author.node.local == True,
-                                       self.all_local_posts)
+        self.local_private_posts = filter(lambda p: p.visibility == 'PRIVATE', self.all_local_posts)
+        self.local_adam_posts = filter(lambda p: p.author == self.adam, self.all_local_posts)
         self.local_adam_posts_sorted = sorted(self.local_adam_posts, key=lambda p: p.published, reverse=True)
         self.adam_comments_on_post_sorted = sorted(self.adam_comments_on_post, key=lambda p: p.published, reverse=True)
         self.bob_posts = filter(lambda p: p.author == self.bob, all_posts)
@@ -201,9 +202,9 @@ class PostsTestCase(APITestCase):
             "posts": reverse("service:public-posts-list"),
             "author/posts": reverse("service:all-posts-list"),
             "author/adam/posts": reverse("service:author-posts-list", args=[self.adam.id]),
-            "posts/adam_post_with_comment/comments": reverse("service:comment-detail",
+            "posts/adam_post_with_comment/comments": reverse("service:post-comments-list",
                                                              args=[self.adam_post_with_comment.id]),
-            "posts/post_without_a_comment/comments": reverse("service:comment-detail",
+            "posts/post_without_a_comment/comments": reverse("service:post-comments-list",
                                                              args=[self.adam_post_without_a_comment.id]),
             "author/bob/posts": reverse("service:author-posts-list", args=[self.bob.id]),
         }
@@ -213,8 +214,8 @@ class PostsTestCase(APITestCase):
 
         self.headers = {
             'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode(
-                '{}:{}'.format(authorized_node.incoming_username,
-                               authorized_node.incoming_password)),
+                '{}:{}'.format(self.authorized_node.incoming_username,
+                               self.authorized_node.incoming_password)),
         }
 
     def test_service_posts_have_correct_response_as_authorized_user(self):
@@ -232,7 +233,7 @@ class PostsTestCase(APITestCase):
 
             # Assert the required keys
             required_post_keys = Post.required_header_fields
-            required_post_comments_keys = Comment.required_comments_fields
+            required_post_comments_keys = Comment.required_header_fields
             required_keys = set()
             query_value = ''
 
@@ -245,7 +246,7 @@ class PostsTestCase(APITestCase):
 
             self.assertTrue(
                 all(keys in data for keys in required_keys),
-                msg='Expected keys {} to exist in the response'.format(", ".join(required_keys)))
+                msg='Expected keys {} to exist in the response {}'.format(", ".join(required_keys), data))
 
             # Assert the key values where possible
             self.assertEqual(data['query'], query_value)
@@ -423,3 +424,61 @@ class PostsTestCase(APITestCase):
 
         for index, post in enumerate(comments):
             self.assertEqual(uuid.UUID(post['id']), self.adam_comments_on_post_sorted[index].id)
+
+    def mock_comment_post_data(self, post):
+        return {
+            'query': 'addComment',
+            'post': urlparse.urljoin(self.authorized_node.host, 'posts/' + str(post.id)),
+            'comment': {
+                'author': {
+                    'id': urlparse.urljoin(self.authorized_node.host, 'author/' + str(self.chris.id)),
+                    'host': self.authorized_node.service_url,
+                    'displayName': self.chris.displayName,
+                    'url': urlparse.urljoin(self.authorized_node.host, 'author/' + str(self.chris.id)),
+                },
+                'comment': "[New Comment]('http://www.remote.com/)",
+                'contentType': 'text/markdown',
+                'published': '2015-03-09T13:07:04+00:00',
+                'id': uuid.uuid4(),
+            }
+        }
+
+    '''
+    def test_post_service_posts_add_remote_comment_to_public_post(self):
+        post = self.local_public_posts[0]
+        data = self.mock_comment_post_data(post)
+        response = self.client.post(reverse("service:post-comments-list", args=[post.id]),
+                                    data=data, format='json', **self.headers)
+        self.assertEquals(response.status_code, 200)
+
+        required_keys = ('query', 'success', 'message')
+        self.assertTrue(
+            all(keys in data for keys in required_keys),
+            msg='Expected keys {} to exist in the response'.format(", ".join(required_keys)))
+
+        self.assertEquals(data['query'], 'addComments')
+        self.assertEquals(data['success'], True)
+        self.assertEquals(data['message'], 'Comment not allowed')
+
+    def test_post_service_posts_add_remote_comment_to_private_post(self):
+        post = self.local_private_posts[0]
+        data = self.mock_comment_post_data(post)
+        response = self.client.post(reverse("service:post-comments-list", args=[post.id]), data=data, format='json',
+                                    **self.headers)
+        self.assertEquals(response.status_code, 403)
+
+        # Assert the data response
+        data = response.data
+
+        self.assertEqual(response.accepted_media_type, u'application/json',
+                         msg='Expected the response to be "application/json"')
+
+        required_keys = ('query', 'success', 'message')
+        self.assertTrue(
+            all(keys in data for keys in required_keys),
+            msg='Expected keys {} to exist in the response'.format(", ".join(required_keys)))
+
+        self.assertEquals(data['query'], 'addComments')
+        self.assertEquals(data['success'], False)
+        self.assertEquals(data['message'], 'Comment not allowed')
+    '''
