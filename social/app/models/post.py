@@ -384,6 +384,7 @@ def get_all_remote_node_posts():
                         'published': post_json['published'],
                         'content': post_json['content'],
                         'visibility': post_json['visibility'],
+                        'content_type': post_json['contentType'],
                     }
                 )
                 node_posts.append(post)
@@ -434,6 +435,7 @@ def get_all_remote_node_posts():
                         'published': post_json['published'],
                         'content': post_json['content'],
                         'visibility': post_json['visibility'],
+                        'content_type': post_json['contentType'],
                     }
                 )
                 node_posts.append(post)
