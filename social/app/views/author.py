@@ -48,7 +48,11 @@ def get_posts_by_author(request, pk):
 
     # Current user views their own posts
     if current_user.is_authenticated() and current_author_guid == author_guid:
-        context['user_posts'] = Post.objects.filter(author__id=current_user.profile.id).order_by('-published')
+        context['user_posts'] = \
+            (Post.objects
+                .filter(author__id=current_user.profile.id)
+                .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                .order_by('-published'))
         context['show_add_post_button'] = "true"
         return render(request, 'app/index.html', context)
 
@@ -83,7 +87,7 @@ def get_posts_by_author(request, pk):
                   friend_posts |
                   foaf_posts |
                   private_local_posts)
-                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                 .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
                  .distinct())
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
