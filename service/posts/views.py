@@ -1,7 +1,6 @@
 import requests
-from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
-from rest_framework import viewsets, views, generics, mixins, status
+from rest_framework import viewsets, views, generics, mixins, status, filters
 from rest_framework.decorators import list_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +24,9 @@ class PublicPostsList(generics.ListAPIView):
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('published', 'title', 'categories', 'contentType',)
+    ordering = ('-published',)
 
     # No permission class
 
@@ -40,6 +42,9 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('published', 'title', 'categories', 'contentType',)
+    ordering = ('-published',)
 
     def get_queryset(self):
         remote_node = self.request.user
@@ -217,6 +222,9 @@ class AuthorPostsView(generics.ListAPIView):
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('published', 'title', 'categories', 'contentType',)
+    ordering = ('-published',)
 
     def get_queryset(self):
         author_id = self.kwargs["pk"]

@@ -1,3 +1,4 @@
+import urlparse
 import uuid
 import re
 
@@ -6,6 +7,12 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from datetime import datetime
+
+from django.utils import timezone
+
+
+from rest_framework.reverse import reverse
+
 from social.app.models.node import Node
 
 
@@ -95,6 +102,24 @@ class Author(models.Model):
         else:
             raise Exception("Attempted to accept a friend request that does not exist.")
 
+    def get_short_json(self, request):
+        """
+        Note: doesn't actually return JSON, just a Dict
+        """
+        node = self.node
+
+        if node.local:
+            uri = reverse("service:author-detail", kwargs={'pk': self.id}, request=request)
+        else:
+            uri = urlparse.urljoin(node.service_url, 'author/' + str(self.id))
+
+        return {
+            "id": uri,
+            "host": node.service_url,
+            "displayName": self.displayName,
+            "url": uri,
+        }
+
     def __str__(self):
         return '%s' % self.displayName
 
@@ -125,6 +150,8 @@ class Author(models.Model):
 
         return host_url + 'author/' + str(id)
 
+    required_fields = {'id', 'url', 'host', 'displayName', 'github'}
+
 
 
 def create_profile(sender, **kwargs):
@@ -149,13 +176,11 @@ def create_profile(sender, **kwargs):
     author.save()
 
 
-
-
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
     if author.github != "" and not author.has_github_task and author.node.local:
-        time = datetime.now().replace(2018, 1, 1)
+        time = timezone.now().replace(2018, 1, 1)
         get_github_activity(str(author.id), repeat=60, repeat_until=time)
         author.has_github_task = True
         author.save()

@@ -1,5 +1,6 @@
 import logging
 import urlparse
+import uuid
 from operator import attrgetter
 
 from django.contrib import messages
@@ -131,6 +132,13 @@ class PostDetailView(generic.DetailView):
             post = None
 
         post_id = self.kwargs["pk"]
+
+        try:
+            post_id = uuid.UUID(post_id)
+        except:
+            logging.warn(
+                "Could not convert the given post_id to a UUID! Continuing with using the given post_id " + post_id)
+
         fetched_new_post = False
 
         if post is None:
@@ -138,8 +146,11 @@ class PostDetailView(generic.DetailView):
             for node in Node.objects.filter(local=False):
                 try:
                     (post, self.comments, self.count) = node.create_or_update_remote_post(post_id)
-                except HTTPError:
+                except Exception as e:
                     # Something's wrong with this node, so let's skip it
+                    logging.error(e)
+                    logging.error("There was a problem requesting a post from {}. Skipping this node..."
+                                  .format(node.host))
                     continue
 
                 if post is not None:
@@ -281,8 +292,10 @@ def post_update(request, pk):
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
 def add_comment_to_post(request, pk):
-    post = get_object_or_404(Post, pk=pk)
     current_author = request.user.profile
+    # Even if it's a remote Post, we have it in our DB at this point
+    post = get_object_or_404(Post, pk=pk)
+
     if request.method == "POST":
         form = CommentForm(request.POST)
 
@@ -290,7 +303,12 @@ def add_comment_to_post(request, pk):
             comment = form.save(commit=False)
             comment.author = current_author
             comment.post = post
-            comment.save()
+
+            if post.author.node.local:
+                comment.save()
+            else:
+                post.save_remote_comment(request, comment)
+
             return redirect('app:posts:detail', pk=post.pk)
     else:
         form = CommentForm()
