@@ -16,8 +16,6 @@ from social.app.models.utils import is_valid_uuid
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows for the retrieval and modification of Authors.
-    
-    retrieve:
     """
 
     queryset = Author.objects.all()
