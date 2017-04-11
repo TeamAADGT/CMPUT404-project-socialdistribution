@@ -6,6 +6,9 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from datetime import datetime
+
+from django.utils import timezone
+
 from social.app.models.node import Node
 
 
@@ -150,7 +153,7 @@ def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
     if author.github != "" and not author.has_github_task and author.node.local:
-        time = datetime.now().replace(2018, 1, 1)
+        time = timezone.now().replace(2018, 1, 1)
         get_github_activity(str(author.id), repeat=60, repeat_until=time)
         author.has_github_task = True
         author.save()

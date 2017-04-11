@@ -5,6 +5,7 @@ import CommonMark
 from django.db import models
 from django.urls import reverse
 from django.db.models import Q
+from django.utils.timezone import now
 
 from social.app.models.author import Author
 from social.app.models.category import Category
@@ -65,7 +66,7 @@ class Post(models.Model):
         blank=True
     )
 
-    published = models.DateTimeField(auto_now_add=True)
+    published = models.DateTimeField(default=now)
 
     visibility = models.CharField(
         max_length=10,

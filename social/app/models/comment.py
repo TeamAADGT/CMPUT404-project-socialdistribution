@@ -1,6 +1,8 @@
 import uuid
 
 from django.db import models
+from django.utils.timezone import now
+
 from social.app.models.author import Author
 from social.app.models.post import Post
 
@@ -23,7 +25,7 @@ class Comment(models.Model):
     )
 
     comment = models.TextField()
-    published = models.DateTimeField(auto_now_add=True)
+    published = models.DateTimeField(default=now)
 
     class Meta:
         ordering = ('published',)
