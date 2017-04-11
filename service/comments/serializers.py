@@ -46,7 +46,8 @@ class CreateCommentSerializer(serializers.Serializer):
 
         # Get this from the request
 
-        remote_node = self.request.node
+        remote_node_host = data["comment"]["author"]["host"]
+        remote_node = get_object_or_404(Node, service_url=remote_node_host)
         anonymous_node = remote_node is None or not remote_node.is_authenticated
 
         if not anonymous_node and not remote_node.share_posts:
