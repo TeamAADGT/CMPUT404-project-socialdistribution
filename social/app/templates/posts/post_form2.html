@@ -38,7 +38,11 @@
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                     <label for="{{ form.content_type.id_for_label }}">{{ form.content_type.label }}</label>
-                    {{ form.content_type|add_class:'form-control' }}
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.content_type|add_class:'form-control' }}
+                        </div>
+                    </div>
 
                 </div>
 
@@ -64,7 +68,11 @@
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                     <label for="{{ form.visibility.id_for_label }}">{{ form.visibility.label }}</label>
-                    {{ form.visibility|add_class:'form-control' }}
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.visibility|add_class:'form-control' }}
+                        </div>
+                    </div>
 
                 </div>
 
@@ -94,7 +102,11 @@
 
                 <div class="form-group">
                     <label for="{{ form.upload_content_type.id_for_label }}">{{ form.upload_content_type.label }}</label>
-                    {{ form.upload_content_type|add_class:'form-control' }}
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.upload_content_type|add_class:'form-control' }}
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">

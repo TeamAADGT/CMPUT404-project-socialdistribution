@@ -7,44 +7,62 @@
 {% endblock %}
 
 {% block content %}
-    <h2>{{ object.displayName }}</h2>
-    <section id="relationship-buttons">
-        <button
-                id="follow-button"
-                data-url="{% url 'service:internal:author-follow' object.id %}"
-                {% ifequal show_follow_button False %}
-                style="display: none"
-                {% endifequal %}>Follow
-        </button>
-        <button
-                id="unfollow-button"
-                data-url="{% url 'service:internal:author-unfollow' object.id %}"
-                {% ifequal show_unfollow_button False %}
-                style="display: none"
-                {% endifequal %}>Unfollow
-        </button>
-        <button
-                id="send-friend-request-button"
-                data-url="{% url 'service:internal:author-friendrequest' object.id %}"
-                {% ifequal show_friend_request_button False %}
-                style="display: none"
-                {% endifequal %}>Send Friend Request
-        </button>
-        <span
-                id="friend-request-sent-message"
-                {% ifequal outgoing_friend_request_for False %}
-                style="display: none"
-                {% endifequal %}>Friend Request Sent</span>
-        <span
-                id="pending-friend-request-message"
-                {% ifequal incoming_friend_request_from False %}
-                style="display: none"
-                {% endifequal %}>Pending Friend Request</span>
-        <span
-                id="friends-message"
-                {% ifequal is_friends False %}
-                style="display: none"
-                {% endifequal %}>Friend</span>
+    <!-- === feature === -->
+
+    <section class="jumbotron" id="feature">
+        <h1>{{ object.displayName }}</h1>
+        <section id="relationship-buttons">
+            <button
+                    id="follow-button"
+                    class="btn btn-default btn-sm"
+                    data-url="{% url 'service:internal:author-follow' object.id %}"
+                    {% ifequal show_follow_button False %}
+                    style="display: none"
+                    {% endifequal %}>Follow
+            </button>
+            <button
+                    id="unfollow-button"
+                    class="btn btn-default btn-sm"
+                    data-url="{% url 'service:internal:author-unfollow' object.id %}"
+                    {% ifequal show_unfollow_button False %}
+                    style="display: none"
+                    {% endifequal %}>Unfollow
+            </button>
+            <button
+                    id="send-friend-request-button"
+                    class="btn btn-default btn-sm"
+                    data-url="{% url 'service:internal:author-friendrequest' object.id %}"
+                    {% ifequal show_friend_request_button False %}
+                    style="display: none"
+                    {% endifequal %}>Send Friend Request
+            </button>
+            <span
+                    id="friend-request-sent-message"
+                    {% ifequal outgoing_friend_request_for False %}
+                    style="display: none"
+                    {% endifequal %}>Friend Request Sent</span>
+            <span
+                    id="pending-friend-request-message"
+                    {% ifequal incoming_friend_request_from False %}
+                    style="display: none"
+                    {% endifequal %}>Pending Friend Request</span>
+            <span
+                    id="friends-message"
+                    {% ifequal is_friends False %}
+                    style="display: none"
+                    {% endifequal %}>Friend</span>
+        </section>
     </section>
-    <p>{{ object.bio }}</p>
+
+    {% if object.bio %}
+        <div class="row">
+            <div class="col-md-8">
+                <h3>About Me</h3>
+                <div class="sd-author-bio">
+                    {{ object.bio }}
+
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
