@@ -35,10 +35,19 @@ Contributors:
 Project API
 ============
 
-* View at https://aadgt-404-master.herokuapp.com/service/docs/ by clicking the "Authorize" button and then entering
+View API documentation at: https://aadgt-404-master.herokuapp.com/service/docs/
+
+To view non-public endpoints, click on the "Authorize" button on the top-right, and enter the following credentials:
+
 * username: api        
 * password: api
 
+AJAX
+====
+
+AJAX was used to implement the Follow, Unfollow, and Send Friend Request buttons on the Author Detail page.
+
+The endpoints used internally are documented (and notes where specifically they are used) in the API documentation referenced above, in the "internal" section.
 
 Project Management
 ==================
