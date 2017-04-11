@@ -31,7 +31,8 @@ def all_posts(request):
     context["user_posts"] = \
         (Post.objects
          .filter(visibility="PUBLIC")
-         .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+         .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+         .filter(unlisted=False)
          .order_by('-published'))
 
     return render(request, 'app/index.html', context)
@@ -95,7 +96,8 @@ def my_stream_posts(request):
                   friend_posts |
                   foaf_posts |
                   private_local_posts)
-                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                 .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+                 .filter(unlisted=False)
                  .distinct())
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
