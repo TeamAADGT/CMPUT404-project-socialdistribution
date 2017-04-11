@@ -1,3 +1,4 @@
+import urlparse
 import uuid
 import re
 
@@ -6,6 +7,9 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from datetime import datetime
+
+from rest_framework.reverse import reverse
+
 from social.app.models.node import Node
 
 
@@ -95,6 +99,24 @@ class Author(models.Model):
         else:
             raise Exception("Attempted to accept a friend request that does not exist.")
 
+    def get_short_json(self, request):
+        """
+        Note: doesn't actually return JSON, just a Dict
+        """
+        node = self.node
+
+        if node.local:
+            uri = reverse("service:author-detail", kwargs={'pk': self.id}, request=request)
+        else:
+            uri = urlparse.urljoin(node.service_url, 'author/' + str(self.id))
+
+        return {
+            "id": uri,
+            "host": node.service_url,
+            "displayName": self.displayName,
+            "url": uri,
+        }
+
     def __str__(self):
         return '%s' % self.displayName
 
@@ -122,7 +144,6 @@ class Author(models.Model):
         return host_url + 'author/' + str(id)
 
 
-
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
 
@@ -143,7 +164,6 @@ def create_profile(sender, **kwargs):
     author.email = user.email
 
     author.save()
-
 
 
 def update_profile(sender, **kwargs):
