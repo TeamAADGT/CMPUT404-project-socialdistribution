@@ -1,4 +1,5 @@
 from django.conf.urls import url, include
+from rest_framework import routers
 
 import service.authors.views
 import service.friendrequest.views
@@ -30,13 +31,13 @@ author_urls = [
 
 internal_urls = [
     url(r'^author/(?P<pk>[0-9a-fA-F-]+)/follow/?$',
-        service.internal.authors.views.follow,
+        service.internal.authors.views.InternalAPIViewSet.as_view({'post': 'follow'}),
         name='author-follow'),
     url(r'^author/(?P<pk>[0-9a-fA-F-]+)/unfollow/?$',
-        service.internal.authors.views.unfollow,
+        service.internal.authors.views.InternalAPIViewSet.as_view({'post': 'unfollow'}),
         name='author-unfollow'),
     url(r'^author/(?P<pk>[0-9a-fA-F-]+)/friendrequest/?$',
-        service.internal.authors.views.friendrequest,
+        service.internal.authors.views.InternalAPIViewSet.as_view({'post': 'friendrequest'}),
         name='author-friendrequest'),
 ]
 
@@ -49,7 +50,7 @@ service_urls = [
     url(r'^friendrequest/?$', service.friendrequest.views.FriendRequestViewSet.as_view({'post': 'friendrequest'}),
         name='friend-request'),
     url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/comments/?$', service.comments.views.CommentListView.as_view(),
-        name='comment-detail'),
+        name='post-comments-list'),
     url(r'^posts/?$', service.posts.views.PublicPostsList.as_view(), name='public-posts-list'),
     url(r'^posts/(?P<pk>[0-9a-fA-F-]+)/?$', service.posts.views.SpecificPostsView.as_view(),
         name='post-detail'),

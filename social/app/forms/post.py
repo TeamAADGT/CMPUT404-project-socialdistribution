@@ -11,7 +11,6 @@ from service import urls
 
 
 class PostForm(forms.ModelForm):
-
     visible_to_author = forms.CharField(
         label="Visible to authors",
         required=False,
@@ -37,20 +36,20 @@ class PostForm(forms.ModelForm):
     )
 
     field_order = ["title", "description", "content_type", "content", "categories", "unlisted",
-                   "visibility", "visible_to_author", "upload_content_type", "upload_content" ]
+                   "visibility", "visible_to_author", "upload_content_type", "upload_content"]
 
-    def save(self, commit=True, *args, **kwargs):
+    def save(self, *args, **kwargs):
+        # NOTE: due to complexities with categories, and visible_to_author, commit=False is not respected!
         request = kwargs["request"]
 
         instance = super(PostForm, self).save(commit=False)
 
         instance.author = request.user.profile
-        instance.source = reverse('service:post-detail', kwargs = {'pk':instance.id}, request=request)
-        instance.origin = instance.source
 
-        self.save_categories(instance, commit)
+        instance.save()
+        self.save_categories(instance)
 
-        self.save_visible_to_author(instance, commit)
+        self.save_visible_to_author(instance)
 
         delete_child = False
 
@@ -75,33 +74,23 @@ class PostForm(forms.ModelForm):
         elif instance.child_post is not None and not upload_content_type:
             delete_child = True
 
-        if commit:
-            instance.save()
-            self.save_m2m()
+        instance.save()
 
-            if instance.child_post:
-                if delete_child:
-                    instance.child_post.delete()
-                else:
-                    instance.child_post.save()
+        if instance.child_post:
+            if delete_child:
+                instance.child_post.delete()
+            else:
+                instance.child_post.save()
 
         return instance
 
-    def save_categories(self, instance, commit=True):
-        instance.categories.clear()
-
+    def save_categories(self, instance):
         categories_string = self.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                if not instance.categories.filter(name=name).exists():
-                    category = Category.objects.filter(name=name).first()
+        category_names = categories_string.split(' ') if categories_string else []
+        categories = [Category.objects.get_or_create(name=name)[0] for name in category_names]
+        instance.categories.set(categories)
 
-                    if category is None:
-                        category = Category.objects.create(name=name)
-
-                    instance.categories.add(category)
-
-    def save_visible_to_author(self, instance, commit=True):
+    def save_visible_to_author(self, instance):
         instance.visible_to_author.clear()
 
         authors_uris_string = self.cleaned_data["visible_to_author"]
@@ -117,7 +106,6 @@ class PostForm(forms.ModelForm):
                 except Exception as e:
                     logging.error(e)
                     logging.error("Invalid Author Link")
-
 
     # Source:
     # https://docs.djangoproject.com/en/1.10/ref/forms/validation/#cleaning-and-validating-fields-that-depend-on-each-other
