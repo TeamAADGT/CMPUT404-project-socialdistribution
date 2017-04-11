@@ -6,7 +6,6 @@ import uuid
 
 import requests
 from django.db import models
-from django.db.models.signals import post_save
 from requests import HTTPError
 from rest_framework.reverse import reverse
 
@@ -75,8 +74,24 @@ class Node(models.Model):
         return all_comments
 
     def get_author_friends(self, author_id):
-        url = self.service_url + "author/" + str(author_id) + "/friends"
-        return requests.get(url, auth=self.auth()).json()
+        url = urlparse.urljoin(self.service_url, "author/%s/friends" % str(author_id))
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_friends_of_endpoint_output(url, response.json())
+
+    def get_if_authors_are_friends(self, first_author_id, second_author_uri):
+        from social.app.models.author import Author
+        (second_author_host, second_author_id) = Author.parse_uri(second_author_uri)
+        second_author_host = second_author_host.replace('http://', '', 1).replace('https://', '', 1)
+
+        if second_author_host[-1] != "/":
+            second_author_host += "/"
+
+        url = (self.service_url
+               + "author/" + str(first_author_id)
+               + "/friends/" + second_author_host + str(second_author_id))
+
+        return requests.get(url, auth=(self.username, self.password)).json()["friends"]
 
     def get_author_posts(self):
         url = urlparse.urljoin(self.service_url, 'author/posts')
@@ -93,6 +108,7 @@ class Node(models.Model):
     '''
     Get all the public posts, traversing through the 'next' link as well, if present.
     '''
+
     def get_all_public_posts(self, size=50):
         posts_json = self.get_public_posts(size=size)
         all_posts_jsons = [posts_json]
@@ -109,6 +125,7 @@ class Node(models.Model):
     Declare a URL in next OR specify the page and size for the initial request.
     If the next value is specified, given page and size values are ignored.
     '''
+
     def get_public_posts(self, page=1, size=50, next_url=None):
         if next_url is None:
             url = urlparse.urljoin(self.service_url, "posts")
@@ -140,6 +157,12 @@ class Node(models.Model):
         # Even when fetching a single post, we get a "paginated" view of it
         # So, let's go find our post in here
         for post_json in json["posts"]:
+            try:
+                post_json['id'] = uuid.UUID(post_json['id'])
+            except Exception as e:
+                logging.error(e)
+                logging.warn("Could not convert the post id, {}, into a UUID object!".format(post_json['id']))
+
             if post_json["id"] == post_uuid:
                 from social.app.models.post import Post
                 from social.app.models.author import Author
@@ -147,9 +170,9 @@ class Node(models.Model):
                 # We've found it, so let's save a copy to the DB
                 author_json = post_json['author']
                 author_id = Author.get_id_from_uri(author_json['id'])
-                author = Author.objects.get(id=author_id)
+                author = self.create_or_update_remote_author(author_id)
                 post, created = Post.objects.update_or_create(
-                    id=uuid.UUID(post_json["id"]),
+                    id=post_json["id"],
                     defaults={
                         'title': post_json['title'],
                         'description': post_json['description'],
@@ -242,41 +265,46 @@ class Node(models.Model):
             auth=self.auth())
 
 
-# TODO This post_save hook is untested!
-def init_friends(sender, **kwargs):
-    node = kwargs["instance"]
-    if node.local is False:
-        from social.app.models.author import Author
-        authors = Author.objects.filter(node=node)
-        for author in authors:
-            for uri in node.get_author_friends(author.id).authors:
-                uri = Author.get_id_from_uri(uri)
-                # Simplifying assumption that there isn't a uri collision
-                new_author_profile_json = node.get_author(uri)
-                new_author = Author.objects.update_or_create(
-                    id=uri,
-                    displayName=new_author_profile_json['displayName'],
-                    url=new_author_profile_json['url'],
-                    node=node)
-
-                new_author_friends_json = new_author.new_author_profile.friends
-                for new_author_friend_json in new_author_friends_json:
-                    # id, host, displayName, and url are available
-                    new_author_friend_node = Node.objects.get_or_create(host=new_author_friends_json['host'])
-                    new_author.friends.update_or_create(
-                        id=uri,
-                        displayName=new_author_profile_json['displayName'],
-                        url=new_author_profile_json['url'],
-                        node=new_author_friend_node)
-
-
-post_save.connect(init_friends, sender=Node)
-
 def verify_posts_endpoint_output(url, json):
-    if all(keys in json for keys in ('query', 'count', 'size', 'posts')):
+    from social.app.models.post import Post
+    if all(keys in json for keys in Post.required_header_fields):
+        for post in json['posts']:
+            # Exceptional case converts a given URL to its UUID as per the specification
+            if is_valid_url(post['id']):
+                try:
+                    uuid = Post.get_id_from_uri(post['id'])
+                    post['id'] = uuid
+                except Exception as e:
+                    logging.error(e)
+                    logging.error('We received a post with a URL in the ID field; ' +
+                                  'however {} does not appear to contain a valid UUID.'.format(json['id']))
+        return json
+    else:
+        # This exceptional case supports groups that give us a single post instead
+        if all(keys in json for keys in Post.required_fields):
+            if type(json) is dict:
+                json = [json]
+
+            logging.warn(
+                'We received the post details without a header! ' +
+                'Added a header to correct the response to the specification.')
+
+            return verify_posts_endpoint_output(url, {
+                'query': 'posts',
+                'size': 50,
+                'count': 1,
+                'posts': json,
+            })
+        logging.warn(
+            "%s did not conform to the expected response format! Returning an empty list of posts!"
+            % url)
+        return {}
+
+def verify_friends_of_endpoint_output(url, json):
+    if all(keys in json for keys in ('query', 'authors')):
         return json
     else:
         logging.warn(
-            "%s did not conform to the expected response format! Returning an empty list of posts!"
+            "%s did not conform to the expected response format! Returning an empty list instead of friends!"
             % url)
         return {}

@@ -1,19 +1,16 @@
-import urlparse
-
-import requests
 from rest_framework import status, viewsets
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import api_view, authentication_classes, permission_classes, detail_route
+from rest_framework.decorators import detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.serializers import Serializer
 
+from service.authentication.session import AuthorSessionAuthentication
 from social.app.models.author import Author
 
 
 class InternalAPIViewSet(viewsets.GenericViewSet):
-    authentication_classes = (SessionAuthentication,)
+    authentication_classes = (AuthorSessionAuthentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = Serializer
 

@@ -1,3 +1,4 @@
+import urlparse
 import uuid
 import re
 
@@ -6,6 +7,12 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from datetime import datetime
+
+from django.utils import timezone
+
+
+from rest_framework.reverse import reverse
+
 from social.app.models.node import Node
 
 
@@ -95,13 +102,35 @@ class Author(models.Model):
         else:
             raise Exception("Attempted to accept a friend request that does not exist.")
 
+    def get_short_json(self, request):
+        """
+        Note: doesn't actually return JSON, just a Dict
+        """
+        node = self.node
+
+        if node.local:
+            uri = reverse("service:author-detail", kwargs={'pk': self.id}, request=request)
+        else:
+            uri = urlparse.urljoin(node.service_url, 'author/' + str(self.id))
+
+        return {
+            "id": uri,
+            "host": node.service_url,
+            "displayName": self.displayName,
+            "url": uri,
+        }
+
     def __str__(self):
         return '%s' % self.displayName
 
     @classmethod
     def get_id_from_uri(cls, uri):
-        match = re.match(r'^(.+)//(.+)/author/(?P<pk>[0-9a-z\\-]+)', uri)
-        return match.group('pk')
+        return cls.parse_uri(uri)[1]
+
+    @classmethod
+    def parse_uri(cls, uri):
+        match = re.match(r'^(?P<host>(https?://(.+)/))author/(?P<pk>[0-9a-fA-F-]+)/?', uri)
+        return match.group('host'), uuid.UUID(match.group('pk'))
 
     def get_uri(self):
         return Author.get_uri_from_host_and_uuid(self.node.host, self.id)
@@ -121,12 +150,13 @@ class Author(models.Model):
 
         return host_url + 'author/' + str(id)
 
+    required_fields = {'id', 'url', 'host', 'displayName', 'github'}
 
 
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
 
-    if user.is_staff:
+    if user.is_staff or user.username == "api":
         return
 
     if kwargs["created"]:
@@ -145,12 +175,11 @@ def create_profile(sender, **kwargs):
     author.save()
 
 
-
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
     if author.github != "" and not author.has_github_task and author.node.local:
-        time = datetime.now().replace(2018, 1, 1)
+        time = timezone.now().replace(2018, 1, 1)
         get_github_activity(str(author.id), repeat=60, repeat_until=time)
         author.has_github_task = True
         author.save()
@@ -162,4 +191,11 @@ def update_profile(sender, **kwargs):
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)
 
-User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0])
+
+def get_associated_author(user):
+    if user.is_staff or user.username == "api":
+        return None
+    return Author.objects.get_or_create(user=user)[0]
+
+
+User.profile = property(get_associated_author)

@@ -61,8 +61,6 @@ class PostForm(forms.ModelForm):
                     author=instance.author,
                     title="Upload",
                     description="Upload",
-                    source=instance.source,
-                    origin=instance.origin,
                     unlisted=instance.unlisted,
                     visibility=instance.visibility,
                     visible_to_author=instance.visible_to_author.all(),

@@ -58,7 +58,7 @@ urlpatterns = [
     url(r'^login/$', auth_views.login, name='login'),
     url(r'^logout/$', auth_views.logout, name='logout'),
     url(r'^debug/', include(debug_urls.urlpatterns, namespace='debug')),
-    url(r'^service/docs/$', swagger_view),
+    url(r'^service/docs/$', swagger_view, name="docs"),
     url(r'^service/schema/$', schema_view),
 ]
 
