@@ -32,6 +32,12 @@ Contributors:
     Gaylord Mbuyi
     Tiegan Bonowicz
 
+Project API
+============
+
+* You may view at <heroku_app>/service/docs/ by clicking the "Authorize" button and then entering, username: api, password: api
+
+
 Project Management
 ==================
 
