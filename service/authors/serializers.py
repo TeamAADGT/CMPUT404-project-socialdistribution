@@ -11,6 +11,10 @@ class UnknownAuthorSerializer(serializers.Serializer):
     id = serializers.URLField()
     host = serializers.URLField()
     url = serializers.URLField()
+    displayName = serializers.CharField(
+        required=False,
+        allow_blank=True
+    )
     github = serializers.URLField(
         required=False,
         allow_blank=True
