@@ -6,6 +6,7 @@ import uuid
 import CommonMark
 import requests
 import rest_framework
+from datetime import date
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -193,7 +194,7 @@ class Post(models.Model):
             "author": self.author.get_short_json(request),
             "comment": comment.comment,
             "contentType": "text/markdown",
-            "published": comment.published,
+            "published": comment.published or date.today,
             "id": str(comment.id)
         }
 
@@ -202,7 +203,6 @@ class Post(models.Model):
         response.raise_for_status()
 
         comment.save()
-
 
     @classmethod
     def get_id_from_uri(cls, uri):
