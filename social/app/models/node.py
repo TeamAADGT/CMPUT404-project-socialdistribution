@@ -9,7 +9,7 @@ from django.db import models
 from requests import HTTPError
 from rest_framework.reverse import reverse
 
-from social.app.models.utils import is_valid_url
+from social.app.models.utils import is_valid_url, is_valid_uuid
 
 
 class Node(models.Model):
@@ -205,6 +205,11 @@ class Node(models.Model):
 
         json = response.json()
 
+        if 'id' in json and 'url' in json:
+            if is_valid_url(json['id']) == False and is_valid_uuid(json['id']):
+                json['id'] = json['url']
+                logging.warn("The post author ID is a UUID and not a URL. Changed the field to the given URL.")
+
         from social.app.models.author import Author
         (author, created) = Author.objects.update_or_create(
             id=Author.get_id_from_uri(json["id"]),
@@ -278,6 +283,18 @@ def verify_posts_endpoint_output(url, json):
                     logging.error(e)
                     logging.error('We received a post with a URL in the ID field; ' +
                                   'however {} does not appear to contain a valid UUID.'.format(json['id']))
+
+            if is_valid_url(post['author']['id']) == False and is_valid_uuid(post['author']['id']):
+                post['author']['id'] = post['author']['url']
+                logging.warn("The post author ID is a UUID and not a URL. Changed the field to the given URL.")
+
+            for comment in post['comments']:
+                if is_valid_url(comment['author']['id']) == False and is_valid_uuid(comment['author']['id']):
+                    comment['author']['id'] = comment['author']['url']
+                    logging.warn(
+                        "The post comment author ID is a UUID and not a URL. " +
+                        "Changed the field to the given URL.")
+
         return json
     else:
         # This exceptional case supports groups that give us a single post instead
@@ -299,6 +316,7 @@ def verify_posts_endpoint_output(url, json):
             "%s did not conform to the expected response format! Returning an empty list of posts!"
             % url)
         return {}
+
 
 def verify_friends_of_endpoint_output(url, json):
     if all(keys in json for keys in ('query', 'authors')):
