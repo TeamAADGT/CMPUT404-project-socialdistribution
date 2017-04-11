@@ -10,11 +10,13 @@ from django.db import models
 from django.db.models import Q
 from django.utils.timezone import now
 from django.urls import reverse
+from requests import HTTPError
 
 from social.app.models.author import Author
 from social.app.models.authorlink import AuthorLink
 from social.app.models.category import Category
 from social.app.models.node import Node
+from social.app.models.utils import is_valid_url
 
 
 class Post(models.Model):
@@ -254,14 +256,20 @@ def get_all_foaf_posts(author):
         # Remote author
         if not friend_obj.node.local:
             # make call to that remote author's friend api
-            friends_json = friend_obj.node.get_author_friends(friend_obj.id)
-            authors_json = friends_json["authors"]
-            for author_id in authors_json:
-                if author_id.startswith('http'):
-                    author_id = Author.get_id_from_uri(author_id)
-                remote_author = Author.objects.filter(Q(followed_authors__id=author_id))
-                if remote_author is not None:
-                    foafs.add(author_id)
+            try:
+                friends_json = friend_obj.node.get_author_friends(friend_obj.id)
+
+                authors_json = friends_json["authors"]
+                for author_id in authors_json:
+                    if author_id.startswith('http'):
+                        author_id = Author.get_id_from_uri(author_id)
+                    remote_author = Author.objects.filter(Q(followed_authors__id=author_id))
+                    if remote_author is not None:
+                        foafs.add(author_id)
+            except HTTPError as e:
+                logging.error(e)
+                logging.warn(
+                    'Skipping the retrieval of friends for ' + str(friend_obj.id) + ' in node ' + friend_obj.node.host)
 
         # Either way, check local author's friends
         new_foafs = set(ff.id for ff in friend_obj.friends.all())
@@ -441,6 +449,19 @@ def get_all_remote_node_posts():
                         'content_type': post_json['contentType'],
                     }
                 )
+
+                post.visible_to_author.clear()
+
+                if 'visibleTo' in post_json:
+                    for visible_to in post_json['visibleTo']:
+                        if is_valid_url(visible_to):
+                            author_link, created = AuthorLink.objects.update_or_create(
+                                uri=visible_to
+                            )
+
+                            post.visible_to_author.add(author_link)
+                    post.save()
+
                 node_posts.append(post)
 
         except Exception, e:
