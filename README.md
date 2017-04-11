@@ -41,6 +41,11 @@ Team Members
 * Gaylord Mbuyi (gaylord@ualberta.ca)
 * Tiegan Bonowicz (tiegan@ualberta.ca)
 
+Video
+=====
+
+https://archive.org/details/cmput404video
+
 Project API
 ===========
 
