@@ -76,9 +76,9 @@ class CreateCommentSerializer(serializers.Serializer):
                 if is_friend and queryset:
                     return data
 
-                # Check if remote author is in the visibleTo list for that post
+            # Check if remote author is in the visibleTo list for that post
             if post.visibility == "PRIVATE":
-                is_visible_to = post.visible_to_remote_author(remote_author_id)
+                is_visible_to = post.is_visible_to_author(remote_author_uri)
                 if is_visible_to and queryset:
                     return data
 

@@ -104,8 +104,8 @@ class Post(models.Model):
         if self.content_type == "text/markdown":
             parser = CommonMark.Parser()
             renderer = CommonMark.HtmlRenderer(options={'safe': True})
-            return renderer.render(parser.parse(self.content))\
-                .replace('data:image/jpg%3B', 'data:image/jpg;')\
+            return renderer.render(parser.parse(self.content)) \
+                .replace('data:image/jpg%3B', 'data:image/jpg;') \
                 .replace('data:image/jpeg%3B', 'data:image/jpeg;') \
                 .replace('data:image/png%3B', 'data:image/png;')
 
@@ -186,8 +186,8 @@ class Post(models.Model):
         else:
             return ""
 
-    def visible_to_remote_author(self, remote_author_id):
-        return len(self.visible_to_author.filter(author_id=remote_author_id)) > 0
+    def is_visible_to_author(self, author_uri):
+        return len(self.visible_to_author.filter(uri=author_uri)) > 0
 
     def save_remote_comment(self, request, comment):
         remote_node = self.author.node
@@ -396,6 +396,7 @@ def get_all_remote_node_posts():
             logging.error(e)
             logging.warn('Skipping a post retrieved from ' + node.host)
             continue
+
 
 # TODO: get posts from service/author/posts/
 # This gets all remote posts from:

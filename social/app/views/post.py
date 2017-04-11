@@ -3,6 +3,7 @@ import urlparse
 import uuid
 from operator import attrgetter
 
+import rest_framework
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -12,6 +13,7 @@ from django.urls import reverse
 from django.views import generic
 from requests import HTTPError
 
+from rest_framework.reverse import reverse as rest_reverse
 from social.app.forms.comment import CommentForm
 from social.app.forms.post import PostForm
 from social.app.models.author import Author
@@ -19,7 +21,7 @@ from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
 from social.app.models.post import (get_all_public_posts, get_all_friend_posts, get_all_foaf_posts,
-    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts)
+                                    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts)
 
 
 def all_posts(request):
@@ -120,10 +122,8 @@ class PostDetailView(generic.DetailView):
         self.count = 0
 
     model = Post
-    # TODO: This needs to filter out posts the current user can't see
-    # TODO: If the post being viewed is a remote post, we need to fetch the latest version of it first
-    # TODO: Needs to filter out only local image posts
-    queryset = Post.objects.filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+    queryset = Post.objects.filter(
+        Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
 
     template_name = 'posts/detail.html'
 
@@ -182,6 +182,34 @@ class PostDetailView(generic.DetailView):
                 raise Http404()
             else:
                 (post, self.comments, self.count) = updated_post_tuple
+
+        current_author = None
+
+        if self.request.user.is_authenticated:
+            current_author = self.request.user.profile
+
+        if current_author:
+            if current_author == post.author or post.visibility == "PUBLIC":
+                can_view_post = True
+            elif post.visibility == "FRIENDS" or post.visibility == "SERVERONLY":
+                can_view_post = current_author.friends_with(post.author)
+            elif post.visibility == "PRIVATE":
+                uri = rest_reverse("service:author-detail", kwargs={'pk': current_author.id}, request=self.request)
+                can_view_post = post.is_visible_to_author(uri)
+            elif post.visibility == "FOAF":
+                can_view_post = current_author.friends_with(post.author)
+                if not can_view_post:
+                    for friend in post.author.friends.all():
+                        can_view_post = friend.friends_with(current_author)
+                        if can_view_post:
+                            break
+            else:
+                raise Exception("Invalid Post visibility type found.")
+        else:
+            can_view_post = post.visibility == "PUBLIC"
+
+        if not can_view_post:
+            raise Http404()
 
         return post
 
