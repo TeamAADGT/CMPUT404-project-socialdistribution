@@ -147,7 +147,7 @@ class Node(models.Model):
                 # We've found it, so let's save a copy to the DB
                 author_json = post_json['author']
                 author_id = Author.get_id_from_uri(author_json['id'])
-                author = Author.objects.get(id=author_id)
+                author = self.create_or_update_remote_author(author_id)
                 post, created = Post.objects.update_or_create(
                     id=uuid.UUID(post_json["id"]),
                     defaults={
