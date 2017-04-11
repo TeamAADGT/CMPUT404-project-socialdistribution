@@ -155,3 +155,21 @@ body {
     border-radius: 3px;
     padding: 16px;
 }
+
+/* === Author detail page === */
+#feature {
+    height: 250px;
+    background: rgba(88,147,201,1);
+    text-align: center;
+    color: #FFF;
+}
+
+#feature h1 {
+    margin-bottom: 20px;
+}
+
+#feature img {
+    margin-top: 5%;
+    border: 5px solid #FFF;
+    border-radius: 5px;
+}

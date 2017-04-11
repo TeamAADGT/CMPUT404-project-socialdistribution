@@ -19,6 +19,13 @@
 
                     <ul class="nav navbar-nav navbar-right">
                         {% if user.profile.activated %}
+                            {% url 'app:authors:list' as lcl_authors_url %}
+                            {% url 'app:authors:find-remote' as rmt_authors_url %}
+                            {% if request.get_full_path == lcl_authors_url  %}
+                                <li><a href="{% url 'app:authors:find-remote' %}">Find Remote Author</a></li>
+                            {% elif request.get_full_path == rmt_authors_url %}
+                                <li><a href="{% url 'app:authors:list' %}">Find Local Authors</a></li>
+                            {% endif %}
                             <li>
                                 <a class="" href="{% url 'app:posts:posts-add' %}">Add Post</a>
                             </li>
@@ -28,10 +35,12 @@
                                aria-haspopup="true"
                                aria-expanded="false">{{ user.profile.displayName }}<span class="caret"></span></a>
                             <ul class="dropdown-menu">
+                                <li><a href="{% url 'app:authors:detail' user.profile.id %}">My Profile</a></li>
                                 <li><a href="{% url 'app:authors:posts-by-author' user.profile.id %}">My Posts</a></li>
                                 <li><a href="{% url 'app:index' %}">My Stream</a></li>
                                 <li><a href="{% url 'app:friend-requests-list' %}">View Friend Requests</a></li>
-                                <li><a href="{% url 'app:authors:list' %}">Find Authors</a></li>
+                                <li><a href="{% url 'app:authors:list' %}">Find Local Authors</a></li>
+                                <li><a href="{% url 'app:authors:find-remote' %}">Find Remote Author</a></li>
                                 <li role="separator" class="divider"></li>
                                 <li><a href="{% url 'account_update' user.id %}">Update My Profile</a></li>
                                 <li role="separator" class="divider"></li>

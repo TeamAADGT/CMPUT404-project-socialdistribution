@@ -5,17 +5,22 @@
     {% if all_friend_requests %}
         <form action="" method="post">
             {% csrf_token %}
-            <ul>
+            <ul class="list-unstyled">
                 {% for friend_request in all_friend_requests %}
-                    <li>
-                        <label>
-                            <input type="checkbox" name="accepted_friend_requests" value="{{ friend_request.id }}"/>
-                            <a target="_blank" href="{% url "app:authors:detail" friend_request.id %}">{{ friend_request.displayName }}</a>
-                        </label>
+                    <li class="form-group">
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="accepted_friend_requests" value="{{ friend_request.id }}"/>
+                                <a target="_blank"
+                                   href="{% url "app:authors:detail" friend_request.id %}">{{ friend_request.displayName }}</a>
+                            </label>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
-            <input type="submit" value="Accept" />
+            <div class="form-group">
+                <button type="submit" class="btn btn-success" value="Accept">Accept</button>
+            </div>
         </form>
     {% else %}
         <p>No pending friend requests found.</p>

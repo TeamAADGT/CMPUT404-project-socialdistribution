@@ -11,6 +11,13 @@ from service import urls
 
 
 class PostForm(forms.ModelForm):
+
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        required=False,
+    )
+
+
     visible_to_author = forms.CharField(
         label="Visible to authors",
         required=False,

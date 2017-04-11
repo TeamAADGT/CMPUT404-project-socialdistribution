@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
 
 {% block content %}
@@ -11,7 +12,7 @@
         {% for field in form.visible_fields %}
             <div class="form-group">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
+                {{ field|add_class:'form-control' }}
                 {% for error in field.errors %}
                     <span class="text-danger">{{ error }}</span>
                 {% endfor %}
