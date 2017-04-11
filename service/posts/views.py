@@ -15,11 +15,17 @@ from social.app.models.post import Post
 
 class PublicPostsList(generics.ListAPIView):
     """
-    Returns all local posts set to public visibility.
+    Returns all local Posts set to public visibility.
     
     Does not require authentication.
     
-    For all posts, see /service/author/posts/.
+    For all posts, see `GET /service/author/posts/`.
+    
+    ### Parameters
+    See below. None are required
+    
+    ### Example Successful Response
+    See `GET /service/posts/{post_id}`.
     """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
@@ -51,22 +57,22 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
         return get_local_posts(remote_node)
 
-    @list_route(methods=['GET'], authentication_classes=(NodeBasicAuthentication,),
-                permission_classes=(IsAuthenticated,))
+    @list_route(methods=['GET'])
     def all_posts(self, request, *args, **kwargs):
+        """
+        Returns all local Posts not set to server-only visibility.
+        
+        For all public posts, see `GET /service/posts/`.
+        
+        ### Example Successful Response
+        See `GET /service/posts/{post_id}`.
+        """
         # Needed to make sure this shows up in the schema -- collides with /posts/ otherwise
         return self.list(request, *args, **kwargs)
 
 
 class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin,
                            viewsets.GenericViewSet):
-    """
-    retrieve:
-    Returns the local post with the specified ID, if any.
-    
-    If the local post has an attached image, and the current remote node has permission to view images, the post
-    containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
-    """
     pagination_class = PostsPagination
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -83,13 +89,94 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
         return get_local_posts(remote_node).filter(Q(id=post_id) | Q(parent_post__id=post_id))
 
     def retrieve(self, request, *args, **kwargs):
+        """
+        Returns the local post with the specified ID, if any.
+        
+        If the local post has an attached image, and the current remote node has permission to view images, the post
+        containing that image is also returned. In other words, this endpoint will always return 0-2 posts.
+        
+        ### Parameters
+        * id: The ID of the Post. (required)
+        
+        ### Example Successful Response
+            {
+              "count": 2,
+              "posts": [
+                {
+                  "title": "sadfsdafsa",
+                  "source": "http://127.0.0.1:8000/service/posts/ab9105af-ba92-41c1-b722-2aaa088a323a",
+                  "origin": "http://127.0.0.1:8000/service/posts/ab9105af-ba92-41c1-b722-2aaa088a323a",
+                  "description": "sdfsad",
+                  "contentType": "text/markdown",
+                  "content": "sdfasdf",
+                  "author": {
+                    "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "host": "http://127.0.0.1:8000/service/",
+                    "displayName": "Adam Ford",
+                    "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "github": ""
+                  },
+                  "categories": [
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "comments": [],
+                  "published": "2017-04-11T06:14:47.556000Z",
+                  "id": "ab9105af-ba92-41c1-b722-2aaa088a323a",
+                  "visibility": "PUBLIC",
+                  "visibleTo": [],
+                  "unlisted": false,
+                  "next": "http://127.0.0.1:8000/service/posts/ab9105af-ba92-41c1-b722-2aaa088a323a/comments",
+                  "count": 0,
+                  "size": 5
+                },
+                {
+                  "title": "Upload",
+                  "source": "http://127.0.0.1:8000/service/posts/d10a7f31-10ed-4567-a93d-e3e80356b9ab",
+                  "origin": "http://127.0.0.1:8000/service/posts/d10a7f31-10ed-4567-a93d-e3e80356b9ab",
+                  "description": "Upload",
+                  "contentType": "image/png;base64",
+                  "content": "iVBORw0KGgoAAAANSUhEUgAAArIAAAGKCAYAAA...",
+                  "author": {
+                    "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "host": "http://127.0.0.1:8000/service/",
+                    "displayName": "Adam Ford",
+                    "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                    "github": ""
+                  },
+                  "categories": [
+                    "1",
+                    "2",
+                    "3"
+                  ],
+                  "comments": [],
+                  "published": "2017-04-11T06:14:48.290000Z",
+                  "id": "d10a7f31-10ed-4567-a93d-e3e80356b9ab",
+                  "visibility": "PUBLIC",
+                  "visibleTo": [],
+                  "unlisted": false,
+                  "next": "http://127.0.0.1:8000/service/posts/d10a7f31-10ed-4567-a93d-e3e80356b9ab/comments",
+                  "count": 0,
+                  "size": 5
+                }
+              ],
+              "next": null,
+              "query": "posts",
+              "size": 100,
+              "previous": null
+            }
+        """
         return self.list(self, request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         """
         Checking whether the requesting author can see this FOAF post or not.
 
-        Expects input in the following format:
+        ### Parameters
+        * id: The ID of the Post being requested. (required)
+
+        ### Expected Input
 
             {
                 # The requested query. Must be set to "getPost". (required)
@@ -118,6 +205,8 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
                 ]
             }
         
+        ### Expected Successful Response
+        See `GET /service/posts/{post_id}`.
         """
         # Source: https://github.com/encode/django-rest-framework/blob/master/rest_framework/mixins.py#L18 (2017-04-07)
         serializer = self.get_serializer(data=request.data)
@@ -218,6 +307,16 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
 
 class AuthorPostsView(generics.ListAPIView):
+    """
+    Returns all local Posts set to non-server-only visibility written by a single local Author.
+    
+    ### Parameters
+    * id: The ID of the local Author. (required)
+    * (See below for rest. They are not required.)
+    
+    ### Example Successful Response
+    See `GET /service/posts/{post_id}`.
+    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)

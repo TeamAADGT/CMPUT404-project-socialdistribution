@@ -168,6 +168,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 APPEND_SLASH = True
 
 LOGIN_URL = "/login/"
+LOGOUT_URL = "/logout/"
 LOGIN_REDIRECT_URL = '/'
 
 REGISTRATION_OPEN = True
