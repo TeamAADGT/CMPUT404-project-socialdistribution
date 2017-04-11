@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, filters
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 
@@ -12,6 +12,9 @@ from service.comments.serializers import CommentSerializer, CreateCommentSeriali
 class CommentListView(generics.ListCreateAPIView):
     authentication_classes = (NodeBasicAuthentication,)
     pagination_class = CommentsPagination
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('published', 'contentType',)
+    ordering = ('-published',)
 
     def get_serializer_class(self):
         if self.request.method == "GET":
@@ -51,10 +54,3 @@ class CommentListView(generics.ListCreateAPIView):
         comment = serializer.save()
         return Response(CommentSerializer(comment, context={'request': request}).data,
                         status=status.HTTP_201_CREATED)
-
-
-
-
-
-
-
