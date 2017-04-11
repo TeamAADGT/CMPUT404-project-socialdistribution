@@ -194,7 +194,7 @@ class Post(models.Model):
             "comment": comment.comment,
             "contentType": "text/markdown",
             "published": comment.published,
-            "id": comment.id
+            "id": str(comment.id)
         }
 
         url = urlparse.urljoin(remote_node.service_url, "posts/%s/comments" % self.id)
