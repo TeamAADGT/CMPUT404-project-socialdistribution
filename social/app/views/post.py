@@ -87,7 +87,8 @@ def my_stream_posts(request):
 
         # case IV: posts.visibility=private
         private_local_posts = get_all_local_private_posts() \
-            .filter(Q(visible_to_author__uri=author_uri))
+            .filter(Q(visible_to_author__uri=author_uri)) \
+            .filter(author__id__in=author.followed_authors.all())
 
         posts = ((public_and_following_posts |
                   friend_posts |

@@ -75,7 +75,7 @@ def get_posts_by_author(request, pk):
 
         # TODO: case IV: posts.visibility=private
         # case IV: posts.visibility=private
-        author_uri = create_author_uri(author)
+        author_uri = create_author_uri(current_author)
         private_local_posts = get_all_local_private_posts() \
             .filter(Q(visible_to_author__uri=author_uri))
 
