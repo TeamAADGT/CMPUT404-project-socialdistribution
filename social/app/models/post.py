@@ -429,7 +429,6 @@ def get_all_remote_node_posts():
                     id=post_id,
                     defaults={
                         'title': post_json['title'],
-                        'source': post_json['source'],
                         'description': post_json['description'],
                         'author': author,
                         'published': post_json['published'],
