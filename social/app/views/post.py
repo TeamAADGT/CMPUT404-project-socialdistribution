@@ -1,4 +1,5 @@
 import logging
+import urlparse
 import uuid
 from operator import attrgetter
 
@@ -17,8 +18,8 @@ from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
-from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, \
-    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts
+from social.app.models.post import (get_all_public_posts, get_all_friend_posts, get_all_foaf_posts,
+    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts)
 
 
 def all_posts(request):
@@ -39,18 +40,10 @@ def all_posts(request):
 def create_author_uri(author):
     author_host = author.node.host
     author_service_url = author.node.service_url
-
-    author_uri = ""
-    protocol = ""
-    if author_service_url.find("http://") >= 0:
-        protocol += "http://"
-    elif author_service_url.find("https://") >= 0:
-        protocol += "https://"
-    else:
-        protocol += ""
+    protocol = urlparse.urlparse(author_service_url).scheme + "://"
 
     author_path = reverse('app:authors:detail', kwargs={'pk': author.id})
-    author_uri += protocol + author_host + author_path
+    author_uri = protocol + author_host + author_path
 
     return author_uri
 
@@ -95,7 +88,8 @@ def my_stream_posts(request):
 
         # case IV: posts.visibility=private
         private_local_posts = get_all_local_private_posts() \
-            .filter(Q(visible_to_author__uri=author_uri))
+            .filter(Q(visible_to_author__uri=author_uri)) \
+            .filter(author__id__in=author.followed_authors.all())
 
         posts = ((public_and_following_posts |
                   friend_posts |

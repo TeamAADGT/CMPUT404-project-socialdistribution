@@ -243,6 +243,21 @@ def get_all_foaf_posts(author):
 
     for friend in friends_list:
         friend_obj = Author.objects.get(pk=friend)
+        # check if anyone we follow is in 2's friends. if so then return their id
+
+        # Remote author
+        if not friend_obj.node.local:
+            # make call to that remote author's friend api
+            friends_json = friend_obj.node.get_author_friends(friend_obj.id)
+            authors_json = friends_json["authors"]
+            for author_id in authors_json:
+                if author_id.startswith('http'):
+                    author_id = Author.get_id_from_uri(author_id)
+                remote_author = Author.objects.filter(Q(followed_authors__id=author_id))
+                if remote_author is not None:
+                    foafs.add(author_id)
+
+        # Either way, check local author's friends
         new_foafs = set(ff.id for ff in friend_obj.friends.all())
         foafs.update(new_foafs)
     foafs.update(friends_list)
@@ -287,7 +302,7 @@ def get_remote_node_posts():
 
                     # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
                     if author_json['id'].startswith('http'):
-                        remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                        remote_author_id = Author.get_id_from_uri(author_json['id'])
                     else:
                         remote_author_id = uuid.UUID(author_json['id'])
 
@@ -340,7 +355,7 @@ def get_all_remote_node_posts():
 
                 # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
                 if author_json['id'].startswith('http'):
-                    remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                    remote_author_id = Author.get_id_from_uri(author_json['id'])
                 else:
                     remote_author_id = uuid.UUID(author_json['id'])
 
@@ -354,6 +369,57 @@ def get_all_remote_node_posts():
                 )
 
                 if post_json['id'].startswith('http'):
+                    post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
+                else:
+                    post_id = uuid.UUID(post_json['id'])
+
+                # Add remote post to DB
+                post, created = Post.objects.update_or_create(
+                    id=post_id,
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
+                node_posts.append(post)
+
+        except Exception, e:
+            logging.error(e)
+            logging.warn('Skipping a post retrieved from ' + node.host)
+            continue
+
+# TODO: get posts from service/author/posts/
+# This gets all remote posts from:
+# /service/author/posts/
+def get_all_remote_node_posts():
+    node_posts = list()
+    for node in Node.objects.filter(local=False):
+        try:
+            some_json = node.get_author_posts()
+            for post_json in some_json['posts']:
+                author_json = post_json['author']
+
+                # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
+                if author_json['id'].startswith('http'):
+                    remote_author_id = Author.get_id_from_uri(author_json['id'])
+                else:
+                    remote_author_id = uuid.UUID(author_json['id'])
+
+                # Add remote author to DB
+                author, created = Author.objects.update_or_create(
+                    id=remote_author_id,
+                    defaults={
+                        'node': node,
+                        'displayName': author_json['displayName'],
+                    }
+                )
+                if 'http' in post_json['id']:
                     post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
                 else:
                     post_id = uuid.UUID(post_json['id'])

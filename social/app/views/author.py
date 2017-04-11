@@ -11,13 +11,27 @@ from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views import generic
 from requests import HTTPError
+import urlparse
+from django.urls import reverse
 
 from social.app.forms.author import FindRemoteAuthorForm
 from social.app.forms.user_profile import UserFormUpdate
 from social.app.models.author import Author
 from social.app.models.node import Node
 from social.app.models.post import Post
-from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, get_remote_node_posts
+from social.app.models.post import (get_all_public_posts, get_all_friend_posts, get_all_foaf_posts,
+    get_all_remote_node_posts, get_all_local_private_posts)
+
+
+def create_author_uri(author):
+    author_host = author.node.host
+    author_service_url = author.node.service_url
+    protocol = urlparse.urlparse(author_service_url).scheme + "://"
+
+    author_path = reverse('app:authors:detail', kwargs={'pk': author.id})
+    author_uri = protocol + author_host + author_path
+
+    return author_uri
 
 
 def get_posts_by_author(request, pk):
@@ -43,7 +57,7 @@ def get_posts_by_author(request, pk):
 
         # Case V: Get other node posts
         # TODO: need to filter these based on remote author's relationship to current user.
-        node_posts = get_remote_node_posts()
+        get_all_remote_node_posts()
 
         # case I: posts.visibility=public
         public_posts = get_all_public_posts()
@@ -60,12 +74,19 @@ def get_posts_by_author(request, pk):
             .filter(author__id=author.id)
 
         # TODO: case IV: posts.visibility=private
+        # case IV: posts.visibility=private
+        author_uri = create_author_uri(current_author)
+        private_local_posts = get_all_local_private_posts() \
+            .filter(Q(visible_to_author__uri=author_uri))
 
-        posts = public_posts | \
-                friend_posts | \
-                foaf_posts
+        posts = ((public_posts |
+                  friend_posts |
+                  foaf_posts |
+                  private_local_posts)
+                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                 .distinct())
 
-        context["user_posts"] = sorted(posts, key=attrgetter('published'))
+        context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
 
         return render(request, 'app/index.html', context)
 
