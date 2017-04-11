@@ -8,6 +8,7 @@ import datetime
 import requests
 from django.db import models
 from django.db.models import Q
+from django.utils.timezone import now
 from django.urls import reverse
 
 from social.app.models.author import Author
@@ -68,7 +69,7 @@ class Post(models.Model):
         blank=True
     )
 
-    published = models.DateTimeField(auto_now_add=True)
+    published = models.DateTimeField(default=now)
 
     visibility = models.CharField(
         max_length=10,
@@ -115,7 +116,7 @@ class Post(models.Model):
         return " ".join(names) if names else ""
 
     def visible_to_uuid_list(self):
-        return [str(author.id) for author in self.visible_to.all()]
+        return [str(author.id) for author in self.visible_to_author.all()]
 
     def visible_to_uris_string(self):
         authors_uuids = self.visible_to_uuid_list()
@@ -209,6 +210,11 @@ class Post(models.Model):
     def get_id_from_uri(cls, uri):
         match = re.match(r'^(.+)//(.+)/posts/(?P<pk>[0-9a-z\\-]+)', uri)
         return match.group('pk')
+
+    required_header_fields = {'query', 'count', 'size', 'posts'}
+    required_fields = {'title', 'source', 'origin', 'description', 'contentType', 'content', 'author',
+                       'categories', 'count', 'size', 'comments', 'published', 'id', 'visibility',
+                       'visibleTo', 'unlisted'}
 
 
 def keys(tuple_list):
