@@ -298,8 +298,10 @@ def post_update(request, pk):
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
 def add_comment_to_post(request, pk):
-    post = get_object_or_404(Post, pk=pk)
     current_author = request.user.profile
+    # Even if it's a remote Post, we have it in our DB at this point
+    post = get_object_or_404(Post, pk=pk)
+
     if request.method == "POST":
         form = CommentForm(request.POST)
 
@@ -307,7 +309,12 @@ def add_comment_to_post(request, pk):
             comment = form.save(commit=False)
             comment.author = current_author
             comment.post = post
-            comment.save()
+
+            if post.author.node.local:
+                comment.save()
+            else:
+                post.save_remote_comment(request, comment)
+
             return redirect('app:posts:detail', pk=post.pk)
     else:
         form = CommentForm()

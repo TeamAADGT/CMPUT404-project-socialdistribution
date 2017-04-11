@@ -1,8 +1,11 @@
 import logging
 import re
+import urlparse
 import uuid
 
 import CommonMark
+import datetime
+import requests
 from django.db import models
 from django.db.models import Q
 from django.utils.timezone import now
@@ -179,6 +182,29 @@ class Post(models.Model):
 
     def visible_to_remote_author(self, remote_author_id):
         return len(self.visible_to_author.filter(author_id=remote_author_id)) > 0
+
+    def save_remote_comment(self, request, comment):
+        remote_node = self.author.node
+        if remote_node.local:
+            raise Exception("save_remote_comment() only saves remote Comments.")
+
+        json = {
+            "query": "addComment",
+            "post": urlparse.urljoin(remote_node.service_url, "posts/" + str(self.id)),
+            "comment": {
+                "author": self.author.get_short_json(request),
+                "comment": comment.comment,
+                "contentType": "text/markdown",
+                "published": (comment.published or datetime.datetime.utcnow()).isoformat(),
+                "id": str(comment.id)
+            },
+        }
+
+        url = urlparse.urljoin(remote_node.service_url, "posts/%s/comments" % self.id)
+        response = requests.post(url, json=json)
+        response.raise_for_status()
+
+        comment.save()
 
     @classmethod
     def get_id_from_uri(cls, uri):
