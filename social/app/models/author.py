@@ -124,6 +124,8 @@ class Author(models.Model):
 
         return host_url + 'author/' + str(id)
 
+    required_fields = {'id', 'url', 'host', 'displayName', 'github'}
+
 
 
 def create_profile(sender, **kwargs):

@@ -32,3 +32,6 @@ class Comment(models.Model):
 
     def __str__(self):
         return 'Comment by {} on {}: {}'.format(self.author, self.post, self.comment)
+
+    required_header_fields = {'query', 'count', 'size', 'comments'}
+    required_fields = {'author', 'comment', 'contentType', 'published', 'id', }

@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
+from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
@@ -230,8 +231,8 @@ class PostsTestCase(APITestCase):
             data = response.data
 
             # Assert the required keys
-            required_post_keys = {'query', 'count', 'size', 'posts'}
-            required_post_comments_keys = {'query', 'count', 'size', 'comments'}
+            required_post_keys = Post.required_header_fields
+            required_post_comments_keys = Comment.required_comments_fields
             required_keys = set()
             query_value = ''
 
@@ -265,7 +266,7 @@ class PostsTestCase(APITestCase):
                 data = response.data
 
                 # Assert the required keys
-                required_keys = {'query', 'count', 'size', 'posts'}
+                required_keys = Post.required_header_fields
                 self.assertTrue(all(keys in data for keys in required_keys),
                                 msg='Expected keys {} to exist in the response'.format(", ".join(required_keys)))
 
@@ -280,21 +281,18 @@ class PostsTestCase(APITestCase):
 
         for post_json in response.data['posts']:
             # Assert the required keys
-            required_keys = {'title', 'source', 'origin', 'description', 'contentType', 'content', 'author',
-                             'categories', 'count', 'size', 'next', 'comments', 'published', 'id', 'visibility',
-                             'visibleTo', 'unlisted'}
+            required_keys = Post.required_fields
             self.assertTrue(
                 all(keys in post_json for keys in required_keys),
                 msg='Expected keys {} to exist in the response'.format(", ".join(required_keys)))
 
-            required_author_keys = {'id', 'url', 'host', 'displayName', 'github'}
-
+            required_author_keys = Author.required_fields
             self.assertTrue(
                 all(keys in post_json['author'] for keys in required_author_keys),
                 msg='Expected keys {} to exist in the post#author response'.format(", ".join(required_keys)))
 
             for comment_json in post_json['comments']:
-                required_comment_keys = {'author', 'comment', 'contentType', 'published', 'id', }
+                required_comment_keys = Comment.required_fields
                 self.assertTrue(
                     all(keys in comment_json for keys in required_comment_keys),
                     msg='Expected keys {} to exist in the post#comment response'.format(", ".join(required_keys)))

@@ -1,4 +1,5 @@
 import logging
+import uuid
 from operator import attrgetter
 
 from django.contrib import messages
@@ -137,6 +138,13 @@ class PostDetailView(generic.DetailView):
             post = None
 
         post_id = self.kwargs["pk"]
+
+        try:
+            post_id = uuid.UUID(post_id)
+        except:
+            logging.warn(
+                "Could not convert the given post_id to a UUID! Continuing with using the given post_id " + post_id)
+
         fetched_new_post = False
 
         if post is None:
@@ -144,8 +152,11 @@ class PostDetailView(generic.DetailView):
             for node in Node.objects.filter(local=False):
                 try:
                     (post, self.comments, self.count) = node.create_or_update_remote_post(post_id)
-                except HTTPError:
+                except Exception as e:
                     # Something's wrong with this node, so let's skip it
+                    logging.error(e)
+                    logging.error("There was a problem requesting a post from {}. Skipping this node..."
+                                  .format(node.host))
                     continue
 
                 if post is not None:
