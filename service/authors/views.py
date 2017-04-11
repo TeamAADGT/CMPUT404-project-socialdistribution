@@ -16,12 +16,37 @@ from social.app.models.utils import is_valid_uuid
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows for the retrieval and modification of Authors.
+    
+    retrieve:
     """
 
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     authentication_classes = (NodeBasicAuthentication,)
     permission_classes = (IsAuthenticated,)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Returns details about a local Author specified by id.
+        
+        ### Parameters
+        * id: The ID of the local Author.
+        
+        ### Expected Successful Response
+            {
+                "id": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                "host": "http://127.0.0.1:8000/service/",
+                "displayName": "Adam Ford",
+                "url": "http://127.0.0.1:8000/service/author/7cb311bf-69dd-4945-b610-937d032d6875",
+                "friends": [],
+                "github": "",
+                "firstName": "Adam",
+                "lastName": "Ford",
+                "email": "a@a.com",
+                "bio": ""
+            }
+        """
+        return super(AuthorViewSet, self).retrieve(request, *args, **kwargs)
 
     @detail_route(methods=["GET"])
     def author_friends(self, request, pk=None):
@@ -31,7 +56,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
         ### Parameters
         * id: The ID of the Author (required)
         
-        Example successful response:
+        ### Example Successful Response
         
             {
                 "query":"friends",
@@ -41,7 +66,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
                 ]
             }
         
-        Example failed response:
+        ### Example Failed Response
         
             {
                 "detail": "Author not found."
@@ -73,7 +98,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
         ### Parameters
         * id: The ID of the Author (required)
         
-        Example input:
+        ### Example Input
         
             {
                 "query":"friends", # Must be set to "friends". (required)
@@ -87,7 +112,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
             }
 
 
-        Example successful response:
+        ### Example Successful Response
 
             {
                 "query":"friends",
@@ -180,7 +205,7 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
         * other_host_name: The host name of the server that's the home of the Author with id of other_id. (required)
         * other_id: The ID of the other Author. May be local to this server, or another server. (required)
         
-        ### Example successful response
+        ### Example Successful Response
         
             {
                 "query":"friends",
