@@ -122,11 +122,10 @@ class Author(models.Model):
         return host_url + 'author/' + str(id)
 
 
-
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
 
-    if user.is_staff:
+    if user.is_staff and user.username == "api":
         return
 
     if kwargs["created"]:
@@ -145,7 +144,6 @@ def create_profile(sender, **kwargs):
     author.save()
 
 
-
 def update_profile(sender, **kwargs):
     from social.tasks import get_github_activity
     author = kwargs["instance"]
@@ -162,4 +160,4 @@ def update_profile(sender, **kwargs):
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)
 
-User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0])
+User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0] if u.username != "api" else None)
