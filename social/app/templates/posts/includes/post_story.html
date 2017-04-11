@@ -18,7 +18,7 @@
             {# Add a read more link to longer posts #}
             {{ post.content_html | safe | truncatechars_html:250 }}
 
-            {% if post.content|length >= 250 %}
+            {% if post.is_text and post.content|length >= 250 %}
                 <div>
                     <a target="_blank" href="{% url 'app:posts:detail' post.id %}">Read More</a>
                 </div>
@@ -27,7 +27,7 @@
             {{ post.content_html | safe }}
         {% endif %}
     </div>
-    {% if post.child_post and post.child_post.is_image %}
+    {% if post.upload_url %}
         <div class="sd-post-upload">
             <img class="img-responsive img-rounded"
                  src="{{ post.upload_url }}"
