@@ -15,11 +15,17 @@ from social.app.models.post import Post
 
 class PublicPostsList(generics.ListAPIView):
     """
-    Returns all local posts set to public visibility.
+    Returns all local Posts set to public visibility.
     
     Does not require authentication.
     
-    For all posts, see /service/author/posts/.
+    For all posts, see `GET /service/author/posts/`.
+    
+    ### Parameters
+    See below. None are required
+    
+    ### Example Successful Response
+    See `GET /service/posts/{post_id}`.
     """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
@@ -53,6 +59,14 @@ class AllPostsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     @list_route(methods=['GET'])
     def all_posts(self, request, *args, **kwargs):
+        """
+        Returns all local Posts not set to server-only visibility.
+        
+        For all public posts, see `GET /service/posts/`.
+        
+        ### Example Successful Response
+        See `GET /service/posts/{post_id}`.
+        """
         # Needed to make sure this shows up in the schema -- collides with /posts/ otherwise
         return self.list(request, *args, **kwargs)
 
@@ -74,7 +88,6 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
         return get_local_posts(remote_node).filter(Q(id=post_id) | Q(parent_post__id=post_id))
 
-    @list_route(methods=['GET'])
     def retrieve(self, request, *args, **kwargs):
         """
         Returns the local post with the specified ID, if any.
@@ -160,7 +173,10 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
         """
         Checking whether the requesting author can see this FOAF post or not.
 
-        Expects input in the following format:
+        ### Parameters
+        * id: The ID of the Post being requested. (required)
+
+        ### Expected Input
 
             {
                 # The requested query. Must be set to "getPost". (required)
@@ -189,6 +205,8 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
                 ]
             }
         
+        ### Expected Successful Response
+        See `GET /service/posts/{post_id}`.
         """
         # Source: https://github.com/encode/django-rest-framework/blob/master/rest_framework/mixins.py#L18 (2017-04-07)
         serializer = self.get_serializer(data=request.data)
@@ -289,6 +307,16 @@ class SpecificPostsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixin
 
 
 class AuthorPostsView(generics.ListAPIView):
+    """
+    Returns all local Posts set to non-server-only visibility written by a single local Author.
+    
+    ### Parameters
+    * id: The ID of the local Author. (required)
+    * (See below for rest. They are not required.)
+    
+    ### Example Successful Response
+    See `GET /service/posts/{post_id}`.
+    """
     pagination_class = PostsPagination
     serializer_class = PostSerializer
     authentication_classes = (NodeBasicAuthentication,)
