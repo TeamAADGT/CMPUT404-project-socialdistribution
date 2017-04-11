@@ -69,6 +69,11 @@ AJAX was used to implement the Follow, Unfollow, and Send Friend Request buttons
 
 The endpoints used internally are documented (and notes where specifically they are used) in the API documentation referenced above, in the "internal" section.
 
+Unimplemented User Stories
+==========================
+
+* As an author, I want to un-befriend local and remote authors
+
 Project Management
 ==================
 
