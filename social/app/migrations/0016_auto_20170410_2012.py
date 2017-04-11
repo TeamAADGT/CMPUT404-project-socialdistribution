@@ -4,10 +4,11 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.db import migrations
+from django.utils import timezone
 
 
 def add_api_docs_user(apps, schema_editor):
-    User.objects.create_user(username="api", password="api")
+    User.objects.create_user(username="api", password="api", last_login=timezone.now())
 
 
 class Migration(migrations.Migration):
