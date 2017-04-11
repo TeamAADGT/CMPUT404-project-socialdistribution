@@ -35,11 +35,9 @@ Contributors:
 Project API
 ============
 
-* View at https://heroku.com/aadgt-404-master.com/service/docs/ by clicking the "Authorize" button and then entering
-
->>username: api        
-
->>password: api
+* View at https://aadgt-404-master.herokuapp.com/service/docs/ by clicking the "Authorize" button and then entering
+* username: api        
+* password: api
 
 
 Project Management
