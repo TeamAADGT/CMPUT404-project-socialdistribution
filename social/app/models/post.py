@@ -190,11 +190,13 @@ class Post(models.Model):
         json = {
             "query": "addComment",
             "post": urlparse.urljoin(remote_node.service_url, "posts/" + str(self.id)),
-            "author": self.author.get_short_json(request),
-            "comment": comment.comment,
-            "contentType": "text/markdown",
-            "published": (comment.published or datetime.datetime.utcnow()).isoformat(),
-            "id": str(comment.id)
+            "comment": {
+                "author": self.author.get_short_json(request),
+                "comment": comment.comment,
+                "contentType": "text/markdown",
+                "published": (comment.published or datetime.datetime.utcnow()).isoformat(),
+                "id": str(comment.id)
+            },
         }
 
         url = urlparse.urljoin(remote_node.service_url, "posts/%s/comments" % self.id)
