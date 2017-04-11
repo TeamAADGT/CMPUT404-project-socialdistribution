@@ -45,7 +45,6 @@ class CommentListView(generics.ListCreateAPIView):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        print request.data
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
