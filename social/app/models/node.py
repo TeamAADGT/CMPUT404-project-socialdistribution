@@ -76,7 +76,7 @@ class Node(models.Model):
 
     def get_author_friends(self, author_id):
         url = urlparse.urljoin(self.service_url, "author/%s/friends" % str(author_id))
-        response = requests.get(url, auth=self.auth()).json()
+        response = requests.get(url, auth=self.auth())
         response.raise_for_status()
         return verify_friends_of_endpoint_output(url, response.json())
 
