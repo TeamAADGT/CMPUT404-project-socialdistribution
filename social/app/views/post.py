@@ -1,4 +1,6 @@
 import logging
+import urlparse
+import uuid
 from operator import attrgetter
 
 from django.contrib import messages
@@ -16,8 +18,8 @@ from social.app.models.author import Author
 from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
-from social.app.models.post import get_all_public_posts, get_all_friend_posts, get_all_foaf_posts, \
-    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts
+from social.app.models.post import (get_all_public_posts, get_all_friend_posts, get_all_foaf_posts,
+    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts)
 
 
 def all_posts(request):
@@ -38,18 +40,10 @@ def all_posts(request):
 def create_author_uri(author):
     author_host = author.node.host
     author_service_url = author.node.service_url
-
-    author_uri = ""
-    protocol = ""
-    if author_service_url.find("http://") >= 0:
-        protocol += "http://"
-    elif author_service_url.find("https://") >= 0:
-        protocol += "https://"
-    else:
-        protocol += ""
+    protocol = urlparse.urlparse(author_service_url).scheme + "://"
 
     author_path = reverse('app:authors:detail', kwargs={'pk': author.id})
-    author_uri += protocol + author_host + author_path
+    author_uri = protocol + author_host + author_path
 
     return author_uri
 
@@ -94,7 +88,8 @@ def my_stream_posts(request):
 
         # case IV: posts.visibility=private
         private_local_posts = get_all_local_private_posts() \
-            .filter(Q(visible_to_author__uri=author_uri))
+            .filter(Q(visible_to_author__uri=author_uri)) \
+            .filter(author__id__in=author.followed_authors.all())
 
         posts = ((public_and_following_posts |
                   friend_posts |
@@ -137,6 +132,13 @@ class PostDetailView(generic.DetailView):
             post = None
 
         post_id = self.kwargs["pk"]
+
+        try:
+            post_id = uuid.UUID(post_id)
+        except:
+            logging.warn(
+                "Could not convert the given post_id to a UUID! Continuing with using the given post_id " + post_id)
+
         fetched_new_post = False
 
         if post is None:
@@ -144,8 +146,11 @@ class PostDetailView(generic.DetailView):
             for node in Node.objects.filter(local=False):
                 try:
                     (post, self.comments, self.count) = node.create_or_update_remote_post(post_id)
-                except HTTPError:
+                except Exception as e:
                     # Something's wrong with this node, so let's skip it
+                    logging.error(e)
+                    logging.error("There was a problem requesting a post from {}. Skipping this node..."
+                                  .format(node.host))
                     continue
 
                 if post is not None:
@@ -287,8 +292,10 @@ def post_update(request, pk):
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
 def add_comment_to_post(request, pk):
-    post = get_object_or_404(Post, pk=pk)
     current_author = request.user.profile
+    # Even if it's a remote Post, we have it in our DB at this point
+    post = get_object_or_404(Post, pk=pk)
+
     if request.method == "POST":
         form = CommentForm(request.POST)
 
@@ -296,7 +303,12 @@ def add_comment_to_post(request, pk):
             comment = form.save(commit=False)
             comment.author = current_author
             comment.post = post
-            comment.save()
+
+            if post.author.node.local:
+                comment.save()
+            else:
+                post.save_remote_comment(request, comment)
+
             return redirect('app:posts:detail', pk=post.pk)
     else:
         form = CommentForm()

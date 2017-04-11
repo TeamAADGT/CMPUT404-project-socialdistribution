@@ -1,10 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
+    {% if user.profile %}
     <div>
         <h2>Waiting for Activation!</h2>
         <p>Thank you for registering on our website.</p>
         <p>Your account is awaiting activation by a server administrator.</p>
         <p>Please check back later!</p>
     </div>
+    {% else %}
+        <div>
+            <p><a href="{% url "docs" %}">Click here</a> to view the API documentation.</p>
+        </div>
+    {% endif %}
 {% endblock content %}
