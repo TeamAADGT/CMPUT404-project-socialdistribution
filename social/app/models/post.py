@@ -4,9 +4,8 @@ import urlparse
 import uuid
 
 import CommonMark
+import datetime
 import requests
-import rest_framework
-from datetime import date
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -194,7 +193,7 @@ class Post(models.Model):
             "author": self.author.get_short_json(request),
             "comment": comment.comment,
             "contentType": "text/markdown",
-            "published": comment.published or date.today,
+            "published": comment.published or datetime.datetime.now(),
             "id": str(comment.id)
         }
 
