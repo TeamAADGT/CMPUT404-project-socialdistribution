@@ -9,7 +9,8 @@ class AuthorSessionAuthentication(SessionAuthentication):
         return_value = super(AuthorSessionAuthentication, self).authenticate(request)
 
         # Make sure this User has an associated Author (i.e. they're not the API docs User)
-        if return_value and not return_value[0].profile:
+        associated_author = return_value[0].profile
+        if return_value and not associated_author:
             return None
 
         return return_value

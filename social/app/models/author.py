@@ -125,7 +125,7 @@ class Author(models.Model):
 def create_profile(sender, **kwargs):
     user = kwargs["instance"]
 
-    if user.is_staff and user.username == "api":
+    if user.is_staff or user.username == "api":
         return
 
     if kwargs["created"]:
@@ -160,4 +160,11 @@ def update_profile(sender, **kwargs):
 post_save.connect(create_profile, sender=User)
 post_save.connect(update_profile, sender=Author)
 
-User.profile = property(lambda u: Author.objects.get_or_create(user=u)[0] if u.username != "api" else None)
+
+def get_associated_author(user):
+    if user.is_staff or user.username == "api":
+        return None
+    return Author.objects.get_or_create(user=user)[0]
+
+
+User.profile = property(get_associated_author)
