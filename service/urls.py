@@ -1,4 +1,5 @@
 from django.conf.urls import url, include
+from rest_framework import routers
 
 import service.authors.views
 import service.friendrequest.views
@@ -30,13 +31,13 @@ author_urls = [
 
 internal_urls = [
     url(r'^author/(?P<pk>[0-9a-fA-F-]+)/follow/?$',
-        service.internal.authors.views.follow,
+        service.internal.authors.views.InternalAPIViewSet.as_view({'post': 'follow'}),
         name='author-follow'),
     url(r'^author/(?P<pk>[0-9a-fA-F-]+)/unfollow/?$',
-        service.internal.authors.views.unfollow,
+        service.internal.authors.views.InternalAPIViewSet.as_view({'post': 'unfollow'}),
         name='author-unfollow'),
     url(r'^author/(?P<pk>[0-9a-fA-F-]+)/friendrequest/?$',
-        service.internal.authors.views.friendrequest,
+        service.internal.authors.views.InternalAPIViewSet.as_view({'post': 'friendrequest'}),
         name='author-friendrequest'),
 ]
 
