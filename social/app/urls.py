@@ -12,7 +12,7 @@ posts_urlpatterns = [
     url(r'^add/$', post_views.post_create, name='posts-add'),
 
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/
-    url(r'^(?P<pk>[0-9a-z\\-]+)/$', post_views.DetailView.as_view(), name='detail'),
+    url(r'^(?P<pk>[0-9a-z\\-]+)/$', post_views.PostDetailView.as_view(), name='detail'),
 
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/
     url(r'(?P<pk>[0-9a-z\\-]+)/edit/$', post_views.post_update, name='posts-update'),
@@ -23,10 +23,6 @@ posts_urlpatterns = [
 
     # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/comment
     url(r'(?P<pk>[0-9a-z\\-]+)/comment/$', post_views.add_comment_to_post, name='add_comment_to_post'),
-
-    # view all comments on a posts
-    # /posts/aeea8619-a9c1-4792-a273-80ccb7255ea2/comments
-    url(r'(?P<pk>[0-9a-z\\-]+)/comments/$', post_views.view_post_comments, name='view-posts-comments'),
 ]
 
 authors_urlpatterns = [

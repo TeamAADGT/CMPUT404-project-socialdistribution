@@ -1,7 +1,8 @@
 import logging
-import re
 import urllib
 import urlparse
+import re
+import uuid
 
 import requests
 from django.db import models
@@ -34,27 +35,54 @@ class Node(models.Model):
     def __str__(self):
         return '%s (%s; %s)' % (self.name, self.host, self.service_url)
 
-    def _get_author(self, uuid):
-        url = urlparse.urljoin(self.service_url, 'author/' + str(uuid))
-        return requests.get(url, auth=(self.username, self.password))
+    def _get_author(self, author_id):
+        url = urlparse.urljoin(self.service_url, "author/" + str(author_id))
+        return requests.get(url, auth=self.auth())
 
-    def get_author(self, uuid):
-        return self._get_author(uuid).json()
+    def auth(self):
+        return self.username, self.password
 
-    def get_author_friends(self, uuid):
-        url = urlparse.urljoin(self.service_url, 'author/' + str(uuid) + '/friends')
-        return requests.get(url, auth=(self.username, self.password)).json()
+    def get_author(self, author_id):
+        return self._get_author(author_id).json()
+
+    def get_post(self, post_id):
+        url = urlparse.urljoin(self.service_url, "posts/" + str(post_id))
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_posts_endpoint_output(url, response.json())
+
+    def get_post_comments(self, post_uuid):
+        """
+        Returns a list of dicts that represents all of the Comments fetched for a particular remote Post,
+        traversing pagination if required.
+        """
+        base_url = urlparse.urljoin(self.service_url, "posts/%s/comments" % str(post_uuid))
+        json = requests.get(base_url, auth=self.auth()).json()
+
+        all_comments = json["comments"]
+
+        while True:
+            # Depending on how the other server interpreted the spec, a lack of a next page is rendered as either
+            # the next field not existing, or the next field being set to an empty value, so we gotta check for both
+            if 'next' in json and is_valid_url(json['next']):
+                next_url = json["next"]
+            else:
+                break
+
+            json = requests.get(next_url, auth=self.auth()).json()
+            all_comments += json["comments"]
+
+        return all_comments
+
+    def get_author_friends(self, author_id):
+        url = self.service_url + "author/" + str(author_id) + "/friends"
+        return requests.get(url, auth=self.auth()).json()
 
     def get_author_posts(self):
         url = urlparse.urljoin(self.service_url, 'author/posts')
-        response = requests.get(url, auth=(self.username, self.password)).json()
-        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
-            return response
-        else:
-            logging.warn(
-                "%s did not conform to the expected response format! Returning an empty list of posts!"
-                % url)
-            return []
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_posts_endpoint_output(url, response.json())
 
     @classmethod
     def get_host_from_uri(cls, uri):
@@ -95,18 +123,53 @@ class Node(models.Model):
         else:
             url = next_url
 
-        response = requests.get(url, auth=(self.username, self.password)).json()
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_posts_endpoint_output(url, response.json())
 
-        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
-            return response
-        else:
-            logging.warn(
-                "%s did not conform to the expected response format! Returning an empty list of posts!"
-                % url)
-            return []
+    def create_or_update_remote_post(self, post_uuid):
+        try:
+            json = self.get_post(post_uuid)
+        except HTTPError as e:
+            if e.response.status_code == requests.codes.not_found:
+                # Post not found
+                return None
+            else:
+                raise
 
-    def create_or_update_remote_author(self, uuid):
-        response = self._get_author(uuid)
+        # Even when fetching a single post, we get a "paginated" view of it
+        # So, let's go find our post in here
+        for post_json in json["posts"]:
+            if post_json["id"] == post_uuid:
+                from social.app.models.post import Post
+                from social.app.models.author import Author
+
+                # We've found it, so let's save a copy to the DB
+                author_json = post_json['author']
+                author_id = Author.get_id_from_uri(author_json['id'])
+                author = Author.objects.get(id=author_id)
+                post, created = Post.objects.update_or_create(
+                    id=uuid.UUID(post_json["id"]),
+                    defaults={
+                        'title': post_json['title'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
+
+                comments = post_json['comments']
+                count = post_json["count"]
+                return post, comments, count
+
+        # If we got here, it means the server decided to just return an empty paginated view
+        # instead of a 404
+        return None
+
+    def create_or_update_remote_author(self, author_id):
+        response = self._get_author(author_id)
 
         try:
             response.raise_for_status()
@@ -176,7 +239,7 @@ class Node(models.Model):
                     "url": target_author_uri,
                 }
             },
-            auth=(self.username, self.password))
+            auth=self.auth())
 
 
 # TODO This post_save hook is untested!
@@ -208,3 +271,12 @@ def init_friends(sender, **kwargs):
 
 
 post_save.connect(init_friends, sender=Node)
+
+def verify_posts_endpoint_output(url, json):
+    if all(keys in json for keys in ('query', 'count', 'size', 'posts')):
+        return json
+    else:
+        logging.warn(
+            "%s did not conform to the expected response format! Returning an empty list of posts!"
+            % url)
+        return {}
