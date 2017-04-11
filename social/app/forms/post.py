@@ -68,6 +68,9 @@ class PostForm(forms.ModelForm):
                     categories=instance.categories.all(),
                 )
 
+                instance.child_post.visible_to_author.set(instance.visible_to_author.all())
+                instance.child_post.categories.set(instance.categories.all())
+
             instance.child_post.content_type = upload_content_type
             instance.child_post.content = base64.b64encode(file_content.read())
         elif instance.child_post is not None and not upload_content_type:
@@ -76,7 +79,10 @@ class PostForm(forms.ModelForm):
         if instance.child_post:
             if delete_child:
                 instance.child_post.delete()
-            instance.child_post.save()
+                instance.child_post.save()
+                instance.child_post = None
+            else:
+                instance.child_post.save()
 
         instance.save()
 
