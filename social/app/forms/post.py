@@ -64,8 +64,6 @@ class PostForm(forms.ModelForm):
                     description="Upload",
                     unlisted=instance.unlisted,
                     visibility=instance.visibility,
-                    visible_to_author=instance.visible_to_author.all(),
-                    categories=instance.categories.all(),
                 )
 
                 instance.child_post.visible_to_author.set(instance.visible_to_author.all())
