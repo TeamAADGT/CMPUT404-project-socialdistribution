@@ -52,6 +52,7 @@ def get_posts_by_author(request, pk):
             (Post.objects
                 .filter(author__id=current_user.profile.id)
                 .filter(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES])
+                .filter(unlisted=False)
                 .order_by('-published'))
         context['show_add_post_button'] = "true"
         return render(request, 'app/index.html', context)
@@ -88,6 +89,7 @@ def get_posts_by_author(request, pk):
                   foaf_posts |
                   private_local_posts)
                  .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+                 .filter(unlisted=False)
                  .distinct())
 
         context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
