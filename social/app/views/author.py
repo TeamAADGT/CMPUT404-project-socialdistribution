@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.forms import inlineformset_factory
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views import generic
 from requests import HTTPError
@@ -135,14 +135,13 @@ class AuthorDetailView(generic.DetailView):
     model = Author
 
     def get_object(self, queryset=None):
-        author_id = self.kwargs["pk"]
-
-        fetched_new_author = False
-
         try:
             author = super(AuthorDetailView, self).get_object(queryset)
-        except Author.DoesNotExist:
+        except Http404:
             author = None
+
+        author_id = self.kwargs["pk"]
+        fetched_new_author = False
 
         if author is None:
             # No Author found -- so let's go ask our remote Nodes if they've got it
@@ -160,9 +159,8 @@ class AuthorDetailView(generic.DetailView):
 
         if author is None:
             # If we got here, no one has it
-            raise Author.DoesNotExist()
+            raise Http404()
 
-        # There's no way for author to be None here, but PyCharm disagrees -- suppressing the warning
         if not author.node.local and not fetched_new_author:
             try:
                 # Let's go get the latest version if we didn't already fetch it above
@@ -174,7 +172,7 @@ class AuthorDetailView(generic.DetailView):
             if updated_author is None:
                 # Well, looks like they deleted this author. Awkward.
                 author.delete()
-                raise Author.DoesNotExist()
+                raise Http404()
             else:
                 author = updated_author
 

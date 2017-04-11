@@ -1,15 +1,16 @@
+import logging
 import re
-import uuid, logging
+import uuid
 
 import CommonMark
 from django.db import models
-from django.urls import reverse
 from django.db.models import Q
+from django.urls import reverse
 
 from social.app.models.author import Author
+from social.app.models.authorlink import AuthorLink
 from social.app.models.category import Category
 from social.app.models.node import Node
-from social.app.models.authorlink import AuthorLink
 
 
 class Post(models.Model):
@@ -42,8 +43,7 @@ class Post(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=250)
-    source = models.URLField()
-    origin = models.URLField()
+
     description = models.TextField()
     github_id = models.TextField(default="")
 
@@ -241,19 +241,16 @@ def get_all_local_private_posts():
 
 # This gets all remote posts from:
 # /service/posts
-# TODO: need to query remote author to grab their friends?
 def get_remote_node_posts():
     node_posts = list()
     for node in Node.objects.filter(local=False):
         try:
-            all_public_posts_jsons = node.get_all_public_posts(size=50)
-            for all_public_posts_json in all_public_posts_jsons:
-                some_json = all_public_posts_json
-
-                if len(some_json) == 0:
+            json_payloads_list = node.get_all_public_posts()
+            for json_payload in json_payloads_list:
+                if len(json_payload) == 0:
                     continue
 
-                for post_json in some_json['posts']:
+                for post_json in json_payload['posts']:
                     author_json = post_json['author']
 
                     # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
@@ -291,6 +288,59 @@ def get_remote_node_posts():
                         }
                     )
                     node_posts.append(post)
+
+        except Exception, e:
+            logging.error(e)
+            logging.warn('Skipping a post retrieved from ' + node.host)
+            continue
+
+
+# TODO: get posts from service/author/posts/
+# This gets all remote posts from:
+# /service/author/posts/
+def get_all_remote_node_posts():
+    node_posts = list()
+    for node in Node.objects.filter(local=False):
+        try:
+            some_json = node.get_author_posts()
+            for post_json in some_json['posts']:
+                author_json = post_json['author']
+
+                # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
+                if author_json['id'].startswith('http'):
+                    remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
+                else:
+                    remote_author_id = uuid.UUID(author_json['id'])
+
+                # Add remote author to DB
+                author, created = Author.objects.update_or_create(
+                    id=remote_author_id,
+                    defaults={
+                        'node': node,
+                        'displayName': author_json['displayName'],
+                    }
+                )
+
+                if post_json['id'].startswith('http'):
+                    post_id = uuid.UUID(Post.get_id_from_uri(post_json['id']))
+                else:
+                    post_id = uuid.UUID(post_json['id'])
+
+                # Add remote post to DB
+                post, created = Post.objects.update_or_create(
+                    id=post_id,
+                    defaults={
+                        'title': post_json['title'],
+                        'source': post_json['source'],
+                        'origin': post_json['origin'],
+                        'description': post_json['description'],
+                        'author': author,
+                        'published': post_json['published'],
+                        'content': post_json['content'],
+                        'visibility': post_json['visibility'],
+                    }
+                )
+                node_posts.append(post)
 
         except Exception, e:
             logging.error(e)
