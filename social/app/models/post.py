@@ -223,7 +223,7 @@ def get_all_foaf_posts(author):
                     author_id = Author.get_id_from_uri(author_id)
                 remote_author = Author.objects.filter(Q(followed_authors__id=author_id))
                 if remote_author is not None:
-                    foafs.update(author_id)
+                    foafs.add(author_id)
 
         # Either way, check local author's friends
         new_foafs = set(ff.id for ff in friend_obj.friends.all())
