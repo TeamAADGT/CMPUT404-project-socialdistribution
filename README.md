@@ -32,6 +32,14 @@ Contributors:
     Gaylord Mbuyi
     Tiegan Bonowicz
 
+Project API
+============
+
+* View at https://aadgt-404-master.herokuapp.com/service/docs/ by clicking the "Authorize" button and then entering
+* username: api        
+* password: api
+
+
 Project Management
 ==================
 
