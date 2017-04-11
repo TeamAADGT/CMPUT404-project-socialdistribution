@@ -193,7 +193,7 @@ class Post(models.Model):
             "author": self.author.get_short_json(request),
             "comment": comment.comment,
             "contentType": "text/markdown",
-            "published": comment.published or datetime.datetime.now(),
+            "published": (comment.published or datetime.datetime.now()).isoformat(),
             "id": str(comment.id)
         }
 
