@@ -1,4 +1,5 @@
 import logging
+import urlparse
 from operator import attrgetter
 
 from django.contrib import messages
@@ -38,18 +39,10 @@ def all_posts(request):
 def create_author_uri(author):
     author_host = author.node.host
     author_service_url = author.node.service_url
-
-    author_uri = ""
-    protocol = ""
-    if author_service_url.find("http://") >= 0:
-        protocol += "http://"
-    elif author_service_url.find("https://") >= 0:
-        protocol += "https://"
-    else:
-        protocol += ""
+    protocol = urlparse.urlparse(author_service_url).scheme + "://"
 
     author_path = reverse('app:authors:detail', kwargs={'pk': author.id})
-    author_uri += protocol + author_host + author_path
+    author_uri = protocol + author_host + author_path
 
     return author_uri
 
