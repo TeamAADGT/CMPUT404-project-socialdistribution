@@ -307,7 +307,7 @@ def get_all_remote_node_posts():
                 author_json = post_json['author']
 
                 # 'id' should be a URI per the spec, but we're being generous and also accepting a straight UUID
-                if 'http' in author_json['id']:
+                if author_json['id'].startswith('http'):
                     remote_author_id = uuid.UUID(Author.get_id_from_uri(author_json['id']))
                 else:
                     remote_author_id = uuid.UUID(author_json['id'])
