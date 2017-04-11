@@ -42,15 +42,14 @@ class Node(models.Model):
     def auth(self):
         return self.username, self.password
 
-    def _get_post(self, post_id):
-        url = urlparse.urljoin(self.service_url, "posts/" + str(post_id))
-        return requests.get(url, auth=self.auth())
-
     def get_author(self, author_id):
         return self._get_author(author_id).json()
 
     def get_post(self, post_id):
-        return self._get_post(post_id).json()
+        url = urlparse.urljoin(self.service_url, "posts/" + str(post_id))
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_posts_endpoint_output(url, response.json())
 
     def get_post_comments(self, post_uuid):
         """
@@ -62,11 +61,12 @@ class Node(models.Model):
 
         all_comments = json["comments"]
 
-        while "next" in json:
+        while True:
             # Depending on how the other server interpreted the spec, a lack of a next page is rendered as either
             # the next field not existing, or the next field being set to an empty value, so we gotta check for both
-            next_url = json["next"]
-            if not next_url:
+            if 'next' in json and is_valid_url(json['next']):
+                next_url = json["next"]
+            else:
                 break
 
             json = requests.get(next_url, auth=self.auth()).json()
@@ -80,17 +80,9 @@ class Node(models.Model):
 
     def get_author_posts(self):
         url = urlparse.urljoin(self.service_url, 'author/posts')
-        response = requests.get(url, auth=self.auth()).json()
-        return response
-        """
-        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
-            return response
-        else:
-            logging.warn(
-                "%s did not conform to the expected response format! Returning an empty list of posts!"
-                % url)
-            return []
-        """
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_posts_endpoint_output(url, response.json())
 
     @classmethod
     def get_host_from_uri(cls, uri):
@@ -131,35 +123,29 @@ class Node(models.Model):
         else:
             url = next_url
 
-        response = requests.get(url, auth=self.auth()).json()
-
-        if all(keys in response for keys in ('query', 'count', 'size', 'posts')):
-            return response
-        else:
-            logging.warn(
-                "%s did not conform to the expected response format! Returning an empty list of posts!"
-                % url)
-            return []
+        response = requests.get(url, auth=self.auth())
+        response.raise_for_status()
+        return verify_posts_endpoint_output(url, response.json())
 
     def create_or_update_remote_post(self, post_uuid):
-        response = self._get_post(post_uuid)
-
         try:
-            response.raise_for_status()
-        except HTTPError:
-            if response.status_code == requests.codes.not_found:
+            json = self.get_post(post_uuid)
+        except HTTPError as e:
+            if e.response.status_code == requests.codes.not_found:
                 # Post not found
                 return None
             else:
                 raise
 
-        json = response.json()
-        posts_json = json["posts"]
-        for post_json in posts_json:
+        # Even when fetching a single post, we get a "paginated" view of it
+        # So, let's go find our post in here
+        for post_json in json["posts"]:
             if post_json["id"] == post_uuid:
                 from social.app.models.post import Post
-                author_json = post_json['author']
                 from social.app.models.author import Author
+
+                # We've found it, so let's save a copy to the DB
+                author_json = post_json['author']
                 author_id = Author.get_id_from_uri(author_json['id'])
                 author = Author.objects.get(id=author_id)
                 post, created = Post.objects.update_or_create(
@@ -177,6 +163,9 @@ class Node(models.Model):
                 comments = post_json['comments']
                 count = post_json["count"]
                 return post, comments, count
+
+        # If we got here, it means the server decided to just return an empty paginated view
+        # instead of a 404
         return None
 
     def create_or_update_remote_author(self, author_id):
@@ -282,3 +271,12 @@ def init_friends(sender, **kwargs):
 
 
 post_save.connect(init_friends, sender=Node)
+
+def verify_posts_endpoint_output(url, json):
+    if all(keys in json for keys in ('query', 'count', 'size', 'posts')):
+        return json
+    else:
+        logging.warn(
+            "%s did not conform to the expected response format! Returning an empty list of posts!"
+            % url)
+        return {}
