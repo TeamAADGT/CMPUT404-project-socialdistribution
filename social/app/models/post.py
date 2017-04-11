@@ -111,6 +111,9 @@ class Post(models.Model):
 
         return ""
 
+    def visible_to_author_list(self):
+        return [author_link.uri for author_link in self.visible_to_author.all()]
+
     def categories_list(self):
         return [cat.name for cat in self.categories.order_by('name')]
 
