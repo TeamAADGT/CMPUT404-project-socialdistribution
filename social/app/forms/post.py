@@ -57,7 +57,8 @@ class PostForm(forms.ModelForm):
         if 'upload_content' in self.files:
             file_content = self.files['upload_content']
             if instance.child_post is None:
-                instance.child_post = Post(
+                instance.child_post = Post.objects.create(
+                    parent_post=instance,
                     author=instance.author,
                     title="Upload",
                     description="Upload",
@@ -72,13 +73,12 @@ class PostForm(forms.ModelForm):
         elif instance.child_post is not None and not upload_content_type:
             delete_child = True
 
-        instance.save()
-
         if instance.child_post:
             if delete_child:
                 instance.child_post.delete()
-            else:
-                instance.child_post.save()
+            instance.child_post.save()
+
+        instance.save()
 
         return instance
 
