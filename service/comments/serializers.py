@@ -110,6 +110,7 @@ class CreateCommentSerializer(serializers.Serializer):
         remote_node_host = author_data["host"]
         remote_node = get_object_or_404(Node, service_url=remote_node_host)
 
+        print author_data
         remote_display_name = author_data["displayName"]
         remote_github = author_data["github"] if "github" in author_data else ""
 
