@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'service.apps.ApiConfig',
     'rest_framework_swagger',
+    'background_task',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -78,6 +79,15 @@ TEMPLATES = [
             'debug': DEBUG,
         },
     },
+    {
+        'BACKEND': 'django.template.backends.jinja2.Jinja2',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'environment': 'social.jinja2.environment',
+        },
+    },
+
 ]
 
 WSGI_APPLICATION = 'social.wsgi.application'
@@ -122,7 +132,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Edmonton'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
@@ -158,7 +168,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 APPEND_SLASH = True
 
 LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = '/posts/'
+LOGOUT_URL = "/logout/"
+LOGIN_REDIRECT_URL = '/'
 
 REGISTRATION_OPEN = True
 
@@ -168,3 +179,4 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100
 }
+

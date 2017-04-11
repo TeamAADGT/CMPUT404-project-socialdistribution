@@ -1,10 +1,10 @@
 {% load static %}
 
 <div class="media-left">
-    <a href="#">
+    <a href="{% url 'app:authors:detail' post.author.id %}">
         <img class="media-object profile-image"
              src="{% static 'images/site/no-profile-picture.png' %}"
-             alt="User Profile pic here">
+             alt="{{ author.displayName }}">
     </a>
 </div>
 
@@ -26,5 +26,7 @@
     {% include 'posts/includes/post_story.html' %}
 </div>
 
-{# Begin posts's comments #}
-{% include 'app/includes/user_profile_post_comments.html' %}
+{%  if not short %}
+    {# Begin posts's comments #}
+    {% include 'app/includes/user_profile_post_comments.html' %}
+{% endif %}

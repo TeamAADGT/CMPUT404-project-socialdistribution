@@ -22,6 +22,9 @@ class AuthRequiredMiddleware(object):
             if request.user.is_staff:
                 if not path.startswith('admin') and not path.startswith('service'):
                     return redirect(reverse('admin:index'))
+            elif request.user.username == "api":
+                if not path.startswith('service') and not path.startswith('logout'):
+                    return redirect(reverse('docs'))
             else:
                 user_profile = Author.objects.get(user_id=request.user.id)
                 if not user_profile.activated:

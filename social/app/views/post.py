@@ -1,250 +1,254 @@
-import base64
+import logging
+import urlparse
 import uuid
-from itertools import chain
 from operator import attrgetter
 
+import rest_framework
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import redirect_to_login
-from django.db.models import Q, F
-from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
+from django.db.models import Q
+from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse
 from django.views import generic
-from django.views.generic import UpdateView, DeleteView
+from requests import HTTPError
 
+from rest_framework.reverse import reverse as rest_reverse
 from social.app.forms.comment import CommentForm
-from social.app.forms.post import TextPostForm, FilePostForm
+from social.app.forms.post import PostForm
 from social.app.models.author import Author
-from social.app.models.category import Category
 from social.app.models.comment import Comment
 from social.app.models.node import Node
 from social.app.models.post import Post
+from social.app.models.post import (get_all_public_posts, get_all_friend_posts, get_all_foaf_posts,
+                                    get_remote_node_posts, get_all_remote_node_posts, get_all_local_private_posts)
 
 
-def get_remote_node_posts():
-    node_posts = list()
-    for node in Node.objects.filter(local=False):
-        for post_json in node.get_author_posts()['posts']:
-            author_json = post_json['author']
-            author = Author(
-                id=Author.get_id_from_uri(author_json['id']),
-                node=node,
-                displayName=author_json['displayName'],
-            )
-            post = Post(
-                id=post_json['id'],
-                title=post_json['title'],
-                source=post_json['source'],
-                origin=post_json['origin'],
-                description=post_json['description'],
-                author=author,
-                published=post_json['published'],
-            )
-            node_posts.append(post)
-    return node_posts
+def all_posts(request):
+    """
+    Get /posts/
+    """
+    remote_posts = get_remote_node_posts()
+    context = dict()
+    context["user_posts"] = \
+        (Post.objects
+         .filter(visibility="PUBLIC")
+         .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+         .filter(unlisted=False)
+         .order_by('-published'))
 
-def indexHome(request):
-    # Currently displaying / page
+    return render(request, 'app/index.html', context)
 
+
+def create_author_uri(author):
+    author_host = author.node.host
+    author_service_url = author.node.service_url
+    protocol = urlparse.urlparse(author_service_url).scheme + "://"
+
+    author_path = reverse('app:authors:detail', kwargs={'pk': author.id})
+    author_uri = protocol + author_host + author_path
+
+    return author_uri
+
+
+def my_stream_posts(request):
+    """
+    Get /
+    """
+    context = dict()
+
+    # User views "My Feed"
     if request.user.is_authenticated():
         user = request.user
+
         author = Author.objects.get(user=request.user.id)
-        context = dict()
 
-        # NOTE: this does the same thing as the function indexHome in app/view.py
-        # Return posts that are NOT by current user (=author) and:
+        author_uri = create_author_uri(author)
 
-        # case 1: posts.visibility=public and following                --> can view
-        # case 1': posts.visibility=public  and not following          --> can't view
-        # case 2': posts.visibility=friends and not friends            --> can't view
-        public_and_following_posts = Post.objects \
-            .filter(author__id__in=author.followed_authors.all()) \
-            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
-
-        # case 2: posts.visibility=friends and friends and friends on this server --> can view
-        friend_posts = Post.objects \
-            .filter(author__id__in=author.friends.all()) \
-            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
-
-        # case 3: posts.visibility=foaf and friend/foaf                --> can view
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        context3 = dict()
-        friends = set(f.id for f in author.friends.all())
-        print ("friends", friends)
-        foafs = set()
-
-        # Get all the foafs
-        for friend in friends:
-            friend_obj = Author.objects.get(pk=friend)
-            # print ("friend obj", friend_obj)
-            new_foafs = set(ff.id for ff in friend_obj.friends.all())
-            # print ("new foafs", new_foafs)
-            foafs.update(new_foafs)
-
-        foafs.update(friends)
-        # print("foafs", foafs)
-
-        foaf_posts = Post.objects \
-            .filter(~Q(author__id=user.profile.id)) \
-            .filter(Q(author__id__in=foafs)) \
-            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
-
-        # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 4: posts.visibility=private                             --> can't see
-
-        # Get node posts
-        # Avoid a possible ConnectionError
+        # Case V: Get other node posts
+        # TODO: need to filter these based on remote author's relationship to current user.
         try:
-            node_posts = get_remote_node_posts()
-        except Exception:
-            node_posts = list()
+            get_all_remote_node_posts()
+        except Exception, e:
+            logging.error(e)
 
-        all_posts = list(
-            chain(
-                public_and_following_posts,
-                friend_posts,
-                foaf_posts,
-                node_posts
-            )
-        )
-
-        context["user_posts"] = sorted(all_posts, key=attrgetter('published'))
-
-        return render(request, 'app/index.html', context)
-    else:
-        # Return all posts on present on the site
-        context = dict()
-        context['all_posts'] = Post.objects.all().order_by('-published')
-        return render(request, 'app/landing.html', context)
-
-
-def view_posts(request):
-    if request.user.is_authenticated():
-        user = request.user
-        author = Author.objects.get(user=request.user.id)
-        context = dict()
-
-        # NOTE: this does the same thing as the function indexHome in app/view.py
-        # Return posts that are NOT by current user (=author) and:
-
-        # case 1: posts.visibility=public and following                --> can view
-        # case 1': posts.visibility=public  and not following          --> can't view
-        # case 2': posts.visibility=friends and not friends            --> can't view
-        public_and_following_posts = Post.objects \
+        # case I: posts.visibility=public and following
+        public_and_following_posts = get_all_public_posts() \
             .filter(~Q(author__id=user.profile.id)) \
+            .filter(author__id__in=author.followed_authors.all())
+
+        # case II: posts.visibility=friends
+        friend_posts = get_all_friend_posts(author) \
             .filter(author__id__in=author.followed_authors.all()) \
-            .filter(Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
+            .filter(~Q(author__id=user.profile.id))
 
-        # case 2: posts.visibility=friends and friends and friends on this server --> can view
-        friend_posts = Post.objects \
+        # case III: posts.visibility=foaf
+        # TODO: Should you have to explicitly follow a foaf to see their posts in your feed?
+        # This code assumes the answer to that question is yes.
+        foaf_posts = get_all_foaf_posts(author) \
             .filter(~Q(author__id=user.profile.id)) \
-            .filter(author__id__in=author.friends.all()) \
-            .filter(Q(visibility="FRIENDS") | Q(visibility="PUBLIC") | Q(visibility="SERVERONLY")) \
-            .order_by('-published')
+            .filter(author__id__in=author.followed_authors.all())
 
-        # case 3: posts.visibility=foaf and friend/foaf                --> can view
-        # case 3': posts.visibility=foaf and not either friend/foaf    --> can view
-        friends = set(f.id for f in author.friends.all())
-        # print ("friends", friends)
-        foafs = set()
+        # case IV: posts.visibility=private
+        private_local_posts = get_all_local_private_posts() \
+            .filter(Q(visible_to_author__uri=author_uri)) \
+            .filter(author__id__in=author.followed_authors.all())
 
-        # Get all the foafs
-        for friend in friends:
-            friend_obj = Author.objects.get(pk=friend)
-            # print ("friend obj", friend_obj)
-            new_foafs = set(ff.id for ff in friend_obj.friends.all())
-            # print ("new foafs", new_foafs)
-            foafs.update(new_foafs)
+        posts = ((public_and_following_posts |
+                  friend_posts |
+                  foaf_posts |
+                  private_local_posts)
+                 .filter(Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+                 .filter(unlisted=False)
+                 .distinct())
 
-        foafs.update(friends)
-        # print("foafs", foafs)
-
-        foaf_posts = Post.objects \
-            .filter(~Q(author__id=user.profile.id)) \
-            .filter(Q(author__id__in=foafs)) \
-            .filter(Q(visibility="FOAF") | Q(visibility="PUBLIC")).order_by('-published')
-
-        # case 4: posts.visibility=public and
-
-        # TODO: need to be able to filter posts by current user's relationship to posts author
-        # case 5: posts.visibility=private                             --> can't see
-
-
-        # Get node posts
-        # Avoid a possible ConnectionError
-        try:
-            node_posts = get_remote_node_posts()
-        except Exception:
-            node_posts = list()
-
-        all_posts = list(
-            chain(
-                public_and_following_posts,
-                friend_posts,
-                foaf_posts,
-                node_posts
-            )
-        )
-
-        context["user_posts"] = sorted(all_posts, key=attrgetter('published'))
+        context["user_posts"] = sorted(posts, key=attrgetter('published'), reverse=True)
 
         return render(request, 'app/index.html', context)
+
+    # Not authenticated
     else:
-        # Return all posts on present on the site
-        context = dict()
-        context['user_posts'] = Post.objects.filter(visibility="PUBLIC").order_by('-published')
-        return render(request, 'app/index.html', context)
+        success_url = reverse('app:posts:index')
+        return HttpResponseRedirect(success_url)
 
 
-class DetailView(generic.DetailView):
-    """
-    Detail View
-    """
+class PostDetailView(generic.DetailView):
+    def __init__(self, **kwargs):
+        super(PostDetailView, self).__init__(**kwargs)
+
+        # Used to cache the Comments fetched in get_object, for use in get_context_data
+        self.comments = []
+        # The Comments count returned from the remote Post call, used to determine whether we need past the first page
+        self.count = 0
+
     model = Post
+    queryset = Post.objects.filter(
+        Q(author__node__local=False) | Q(content_type__in=[x[0] for x in Post.TEXT_CONTENT_TYPES]))
+
     template_name = 'posts/detail.html'
 
+    def get_object(self, queryset=None):
+        try:
+            post = super(PostDetailView, self).get_object(queryset)
+        except Http404:
+            post = None
 
-class PostDelete(DeleteView):
-    model = Post
-    success_url = reverse_lazy('app:posts:index')
+        post_id = self.kwargs["pk"]
 
-    def dispatch(self, request, *args, **kwargs):
-        if not author_passes_test(self.get_object(), request):
-            return redirect_to_login(request.get_full_path())
-        return super(PostDelete, self).dispatch(
-            request, *args, **kwargs)
+        try:
+            post_id = uuid.UUID(post_id)
+        except:
+            logging.warn(
+                "Could not convert the given post_id to a UUID! Continuing with using the given post_id " + post_id)
 
+        fetched_new_post = False
 
-def get_upload_file(request, pk):
-    post = get_object_or_404(Post, pk=pk)
+        if post is None:
+            # No Author found -- so let's go ask our remote Nodes if they've got it
+            for node in Node.objects.filter(local=False):
+                try:
+                    (post, self.comments, self.count) = node.create_or_update_remote_post(post_id)
+                except Exception as e:
+                    # Something's wrong with this node, so let's skip it
+                    logging.error(e)
+                    logging.error("There was a problem requesting a post from {}. Skipping this node..."
+                                  .format(node.host))
+                    continue
 
-    if not post.is_upload():
-        # doesn't make sense to do this
-        return HttpResponseForbidden()
+                if post is not None:
+                    # Found it!
+                    fetched_new_post = True
+                    break
 
-    if post.is_image():
-        content = base64.b64decode(post.content)
-        content_type = post.content_type.split(';')[0]
-    else:
-        # is application/base64, so don't decode
-        content = post.content
-        content_type = post.content_type
+        if post is None:
+            # If we got here, no one has it
+            raise Http404()
 
-    return HttpResponse(
-        content=content,
-        content_type=content_type,
-    )
+        post_node = post.author.node
+        if not post_node.local and not fetched_new_post:
+            try:
+                # Let's go get the latest version if we didn't already fetch it above
+                updated_post_tuple = post_node.create_or_update_remote_post(post_id)
+            except HTTPError:
+                # Remote server failed in a way that wasn't a 404, so let's just display our cached version
+                # with no comments
+                self.comments = []
+                self.count = 0
+                return post
 
+            if not updated_post_tuple or not updated_post_tuple[0]:
+                # Well, looks like they deleted this author. Awkward.
+                post.delete()
+                raise Http404()
+            else:
+                (post, self.comments, self.count) = updated_post_tuple
 
-def view_post_comments(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    context = dict()
-    context["all_comments"] = Comment.objects.filter(post_id=post.id)
-    return render(request, 'posts/comments.html', context)
+        current_author = None
+
+        if self.request.user.is_authenticated:
+            current_author = self.request.user.profile
+
+        if current_author:
+            if current_author == post.author or post.visibility == "PUBLIC":
+                can_view_post = True
+            elif post.visibility == "FRIENDS" or post.visibility == "SERVERONLY":
+                can_view_post = current_author.friends_with(post.author)
+            elif post.visibility == "PRIVATE":
+                uri = rest_reverse("service:author-detail", kwargs={'pk': current_author.id}, request=self.request)
+                can_view_post = post.is_visible_to_author(uri)
+            elif post.visibility == "FOAF":
+                can_view_post = current_author.friends_with(post.author)
+                if not can_view_post:
+                    for friend in post.author.friends.all():
+                        can_view_post = friend.friends_with(current_author)
+                        if can_view_post:
+                            break
+            else:
+                raise Exception("Invalid Post visibility type found.")
+        else:
+            can_view_post = post.visibility == "PUBLIC"
+
+        if not can_view_post:
+            raise Http404()
+
+        return post
+
+    def get_context_data(self, **kwargs):
+        context = super(PostDetailView, self).get_context_data(**kwargs)
+
+        post = self.object
+
+        # Don't do anything if Post wasn't found
+        if post:
+            if post.author.node.local:
+                context["comments"] = post.comments.all()
+            else:
+                if self.count > len(self.comments):
+                    # We need to fetch all of the Post's Comments, including the ones past the first page we got
+                    comments_json = post.author.node.get_post_comments(post.id)
+                else:
+                    # This means the initial Post response contained all of the comments
+                    comments_json = self.comments
+
+                all_comments = []
+                for comment_json in comments_json:
+                    # For compatibility with our existing views, we're instantiating models that won't get saved
+                    # to the database, and displaying those
+                    author = Author(
+                        displayName=comment_json["author"]["displayName"]
+                    )
+                    comment_json["author"] = author
+                    comment = Comment(
+                        author=author,
+                        comment=comment_json["comment"],
+                        published=comment_json["published"],
+                        id=comment_json["id"]
+                    )
+                    all_comments.append(comment)
+
+                context["comments"] = all_comments
+
+        return context
 
 
 @login_required
@@ -252,7 +256,8 @@ def post_create(request):
     if not request.user.is_authenticated():
         raise Http404
 
-    form = TextPostForm(request.POST or None, request.FILES or None)
+    form = PostForm(request.POST or None, request.FILES or None)
+
     if form.is_valid():
         instance = form.save(request=request)
         messages.success(request, "You just added a new post.")
@@ -260,25 +265,32 @@ def post_create(request):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
 
 
+# Delete a particular post
 @login_required
-def post_upload(request):
+def post_delete(request, pk):
     if not request.user.is_authenticated():
         raise Http404
 
-    form = FilePostForm(request.POST or None, request.FILES or None)
-    if form.is_valid():
-        instance = form.save(request=request)
-        messages.success(request, "You just added a new post.")
-        return HttpResponseRedirect(instance.get_absolute_url())
-    context = {
-        "form": form,
-    }
-    return render(request, "posts/post_form.html", context)
+    post = get_object_or_404(Post, pk=pk)
+
+    if post.author != request.user.profile:
+        return HttpResponse(status=401)
+
+    post.delete()
+
+    # How to pass argument to reverse
+    # By igor(https://stackoverflow.com/users/978434/igor)
+    # On StackOverflow url: https://stackoverflow.com/questions/15703475/how-to-make-reverse-lazy-lazy-for-arguments-too
+    # License: CC-BY-SA 3.0
+    success_url = reverse('app:authors:posts-by-author', kwargs={'pk': request.user.profile.id, })
+    # Upon success redirects user to /authors/<current_user_guid>/posts/
+    return HttpResponseRedirect(success_url)
 
 
+# Update a particular post
 @login_required
 def post_update(request, pk):
     if not request.user.is_authenticated():
@@ -289,10 +301,18 @@ def post_update(request, pk):
     if post.author != request.user.profile:
         return HttpResponse(status=401)
 
-    if post.is_upload():
-        form = FilePostForm(request.POST or None, request.FILES or None, instance=post)
+    if post.child_post:
+        upload_content_type = post.child_post.content_type
     else:
-        form = TextPostForm(request.POST or None, request.FILES or None, instance=post)
+        upload_content_type = ""
+
+    form = PostForm(request.POST or None, request.FILES or None,
+                    instance=post,
+                    initial={
+                        'upload_content_type': upload_content_type,
+                        'categories': post.categories_string(),
+                        'visible_to_author': post.visible_to_authors_string(),
+                    })
 
     if form.is_valid():
         instance = form.save(request=request)
@@ -301,14 +321,16 @@ def post_update(request, pk):
     context = {
         "form": form,
     }
-    return render(request, "posts/post_form.html", context)
+    return render(request, "posts/post_form2.html", context)
 
 
 # Based on code by Django Girls,
 # url: https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/homework_create_more_models/
 def add_comment_to_post(request, pk):
-    post = get_object_or_404(Post, pk=pk)
     current_author = request.user.profile
+    # Even if it's a remote Post, we have it in our DB at this point
+    post = get_object_or_404(Post, pk=pk)
+
     if request.method == "POST":
         form = CommentForm(request.POST)
 
@@ -316,7 +338,12 @@ def add_comment_to_post(request, pk):
             comment = form.save(commit=False)
             comment.author = current_author
             comment.post = post
-            comment.save()
+
+            if post.author.node.local:
+                comment.save()
+            else:
+                post.save_remote_comment(request, comment)
+
             return redirect('app:posts:detail', pk=post.pk)
     else:
         form = CommentForm()

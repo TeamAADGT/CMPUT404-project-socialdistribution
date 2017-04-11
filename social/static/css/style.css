@@ -21,6 +21,10 @@ body {
     margin-top: 20px;
 }
 
+.sd-margin-bottom-10 {
+    margin-bottom: 10px;
+}
+
 .sd-margin-bottom-20 {
     margin-bottom: 20px;
 }
@@ -61,6 +65,11 @@ body {
 .sd-post .sd-post-media-container img {
 }
 
+/* === Adding Post === */
+.sd-author-item {
+
+}
+
 /* === Posts === */
 #sd-profile-posts-wrapper .sd-post {
     padding: 12px;
@@ -94,6 +103,11 @@ body {
 .post-image {
     height: 50%;
 }
+
+.sd-post-story {
+    word-wrap: break-word;
+}
+
 
 .sd-profile-comments-title {
     margin: 16px -16px 16px -16px;
@@ -140,4 +154,22 @@ body {
     border: 1px solid #CCC;
     border-radius: 3px;
     padding: 16px;
+}
+
+/* === Author detail page === */
+#feature {
+    height: 250px;
+    background: rgba(88,147,201,1);
+    text-align: center;
+    color: #FFF;
+}
+
+#feature h1 {
+    margin-bottom: 20px;
+}
+
+#feature img {
+    margin-top: 5%;
+    border: 5px solid #FFF;
+    border-radius: 5px;
 }

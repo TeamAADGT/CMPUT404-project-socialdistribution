@@ -1,110 +1,144 @@
-import base64
-import uuid
-from abc import ABCMeta
+import base64, uuid, logging
 
 from django import forms
+from rest_framework.reverse import reverse
 
 from social.app.models.category import Category
 from social.app.models.post import Post
-
-"""
-Overriding ModelForm.save idea from Wogan (http://stackoverflow.com/users/137902/wogan) on StackOverflow
-Link: http://stackoverflow.com/a/3929671 (CC-BY-SA 3.0)
-"""
+from social.app.models.author import Author
+from social.app.models.authorlink import AuthorLink
+from service import urls
 
 
-class PostFormBase(forms.ModelForm):
+class PostForm(forms.ModelForm):
+
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        required=False,
+    )
+
+
+    visible_to_author = forms.CharField(
+        label="Visible to authors",
+        required=False,
+        help_text="Single author link per line",
+        widget=forms.Textarea,
+    )
+
     categories = forms.CharField(
         label="Categories",
         required=False,
         help_text="Space-delimited",
     )
 
-    def save(self, commit=True, *args, **kwargs):
-        request = kwargs["request"]
-
-        instance = super(PostFormBase, self).save(commit=False)
-
-        instance.author = request.user.profile
-
-        if not (instance.source and instance.origin):
-            # Source:
-            # https://docs.djangoproject.com/en/1.10/ref/request-response/#django.http.HttpRequest.build_absolute_uri
-            url = request.build_absolute_uri(instance.get_absolute_url())
-
-            instance.source = url
-            instance.origin = url
-
-        self.save_categories(instance, commit)
-        self.save_hook(instance, request)
-
-        if commit:
-            instance.save()
-            self.save_m2m()
-
-        return instance
-
-    def save_categories(self, instance, commit=True):
-        categories_string = self.cleaned_data["categories"]
-        if categories_string:
-            for name in categories_string.split(" "):
-                if not instance.categories.filter(name=name).exists():
-                    category = Category.objects.filter(name=name).first()
-
-                    if category is None:
-                        category = Category.objects.create(name=name)
-
-                    instance.categories.add(category)
-
-    def save_hook(self, instance, request):
-        """
-        Redefine this in the child class.
-        """
-        pass
-
-
-class TextPostForm(PostFormBase):
     content_type = forms.ChoiceField(choices=Post.TEXT_CONTENT_TYPES)
-    categories = forms.CharField(
-        label="Categories",
+
+    upload_content_type = forms.ChoiceField(
+        choices=[("", "")] + Post.IMAGE_CONTENT_TYPES,
         required=False,
-        help_text="Space-delimited",
     )
 
-    class Meta:
-        model = Post
-        fields = ["title", "description", "content_type", "content", "visibility", "visible_to",
-                  "unlisted"]
-
-
-class FilePostForm(PostFormBase):
-    content_type = forms.ChoiceField(choices=Post.UPLOAD_CONTENT_TYPES)
-    content = forms.FileField(
+    upload_content = forms.FileField(
         required=False
     )
 
-    class Meta:
-        model = Post
-        fields = ["title", "description", "content_type", "content", "visibility", "visible_to"]
+    field_order = ["title", "description", "content_type", "content", "categories", "unlisted",
+                   "visibility", "visible_to_author", "upload_content_type", "upload_content"]
 
-    def save_hook(self, instance, request):
-        if 'content' in self.files:
-            file_content = self.files['content']
-            instance.content = base64.b64encode(file_content.read())
+    def save(self, *args, **kwargs):
+        # NOTE: due to complexities with categories, and visible_to_author, commit=False is not respected!
+        request = kwargs["request"]
 
-        # Upload posts are always unlisted
-        instance.unlisted = True
+        instance = super(PostForm, self).save(commit=False)
 
+        instance.author = request.user.profile
+
+        instance.save()
+        self.save_categories(instance)
+
+        self.save_visible_to_author(instance)
+
+        delete_child = False
+
+        upload_content_type = self.cleaned_data["upload_content_type"]
+        if 'upload_content' in self.files:
+            file_content = self.files['upload_content']
+            if instance.child_post is None:
+                instance.child_post = Post.objects.create(
+                    parent_post=instance,
+                    author=instance.author,
+                    title="Upload",
+                    description="Upload",
+                    unlisted=instance.unlisted,
+                    visibility=instance.visibility,
+                )
+
+                instance.child_post.visible_to_author.set(instance.visible_to_author.all())
+                instance.child_post.categories.set(instance.categories.all())
+
+            instance.child_post.content_type = upload_content_type
+            instance.child_post.content = base64.b64encode(file_content.read())
+        elif instance.child_post is not None and not upload_content_type:
+            delete_child = True
+
+        if instance.child_post:
+            if delete_child:
+                instance.child_post.delete()
+                instance.child_post.save()
+                instance.child_post = None
+            else:
+                instance.child_post.save()
+
+        instance.save()
+
+        return instance
+
+    def save_categories(self, instance):
+        categories_string = self.cleaned_data["categories"]
+        category_names = categories_string.split(' ') if categories_string else []
+        categories = [Category.objects.get_or_create(name=name)[0] for name in category_names]
+        instance.categories.set(categories)
+
+    def save_visible_to_author(self, instance):
+        instance.visible_to_author.clear()
+
+        authors_uris_string = self.cleaned_data["visible_to_author"]
+        if authors_uris_string:
+            for author_uri_string in authors_uris_string.splitlines():
+                author_uri_string = author_uri_string.strip()
+                try:
+                    Author.get_id_from_uri(author_uri_string)
+                    if not instance.visible_to_author.filter(uri=author_uri_string).exists():
+                        author_uri, created = AuthorLink.objects.get_or_create(uri=author_uri_string)
+
+                        instance.visible_to_author.add(author_uri)
+                except Exception as e:
+                    logging.error(e)
+                    logging.error("Invalid Author Link")
+
+    # Source:
+    # https://docs.djangoproject.com/en/1.10/ref/forms/validation/#cleaning-and-validating-fields-that-depend-on-each-other
     def clean(self):
-        """
-        Conditional requirement logic from Benjamin Wohlwend (http://stackoverflow.com/users/45691/benjamin-wohlwend)
-        Link: http://stackoverflow.com/a/2307132 (CC-BY-SA 3.0)
-        """
-        cleaned_data = super(FilePostForm, self).clean()
+        cleaned_data = super(PostForm, self).clean()
+        upload_content = cleaned_data["upload_content"]
+        upload_content_type = cleaned_data["upload_content_type"]
 
         is_insert = not Post.objects.filter(id=self.instance.id).exists()
 
-        if is_insert and 'content' not in self.files:
-            raise forms.ValidationError("A new upload post must have a file to upload.")
+        # upload_content and type must either both be set or both not be set
+        if is_insert:
+            if (upload_content and not upload_content_type) or (not upload_content and upload_content_type):
+                raise forms.ValidationError(
+                    "Upload content type can only be set if an image is uploaded, and vice-versa.")
         else:
-            return cleaned_data
+            if upload_content:
+                if not upload_content_type:
+                    raise forms.ValidationError("Uploading a new image requires an upload content type.")
+            elif (self.instance.child_post
+                  and upload_content_type  # Not setting the upload content type deletes an existing image
+                  and upload_content_type != self.instance.child_post.content_type):
+                raise forms.ValidationError("Can't change the content type of an existing image.")
+
+    class Meta:
+        model = Post
+        fields = ["title", "description", "content_type", "content", "visibility", "unlisted"]

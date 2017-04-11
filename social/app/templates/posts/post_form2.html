@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+
+{% block title %}Add a new post{% endblock %}
+{% block posts_active %}active{% endblock %}
+
+{% block content %}
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <form action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {{ form.non_field_errors }}
+
+                <div class="form-group">
+                    {{ field|add_class:'form-control' }}
+                    {% for error in form.title.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title|add_class:'form-control' }}
+
+                </div>
+
+                <div class="form-group">
+                    {% for error in form.description.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                    {{ form.description|add_class:'form-control' }}
+
+                </div>
+
+                <div class="form-group">
+                    {% for error in form.content_type.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.content_type.id_for_label }}">{{ form.content_type.label }}</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.content_type|add_class:'form-control' }}
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="form-group">
+                    {% for error in form.content.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>
+                    {{ form.content|add_class:'form-control' }}
+
+                </div>
+
+                <div class="form-group">
+                    {% for error in form.categories.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.categories.id_for_label }}">{{ form.categories.label }}</label>
+                    {{ form.categories|add_class:'form-control' }}
+                </div>
+
+                <div class="form-group">
+                    {% for error in form.visibility.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.visibility.id_for_label }}">{{ form.visibility.label }}</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.visibility|add_class:'form-control' }}
+                        </div>
+                    </div>
+
+                </div>
+
+                {# Begin visible to authors textarea #}
+                <div class="form-group">
+                    {% for error in form.visible_to_author.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <label for="{{ form.visible_to_author.id_for_label }}">{{ form.visible_to_author.label }}</label>
+                    {{ form.visible_to_author|add_class:'form-control' }}
+                    <span id="helpBlock" class="help-block">{{ form.visible_to_author.help_text }}</span>
+
+                </div>
+                {# End of visible to authors textarea #}
+
+                <div class="form-group">
+                    {% for error in form.unlisted.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                    <div class="checkbox">
+                        <label for="{{ form.unlisted.id_for_label }}">
+                            {{ form.unlisted }}
+                            <strong>{{ form.unlisted.label }}</strong>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.upload_content_type.id_for_label }}">{{ form.upload_content_type.label }}</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ form.upload_content_type|add_class:'form-control' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.upload_content.id_for_label }}">{{ form.upload_content.label }}</label>
+                    {{ form.upload_content }}
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success">Add Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

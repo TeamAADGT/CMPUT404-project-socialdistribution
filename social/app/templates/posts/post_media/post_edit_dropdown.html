@@ -15,11 +15,11 @@
             <!-- Delete posts -->
             <a type="submit"
                class="btn btn-block btn-fixed-corners"
-               onclick="$('#deletePostForm').submit();">
+               onclick="$('#post-{{ post.id }}').submit();">
                 <span class="glyphicon glyphicon-trash"></span>
                 Delete
             </a>
-            <form id="deletePostForm"
+            <form id="post-{{ post.id }}"
                   action="{% url 'app:posts:posts-delete' post.id %}"
                   method="post"
                   onsubmit="return confirm('Are you sure you want to delete your posts?');">
