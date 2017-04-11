@@ -75,8 +75,10 @@ class Node(models.Model):
         return all_comments
 
     def get_author_friends(self, author_id):
-        url = self.service_url + "author/" + str(author_id) + "/friends"
-        return requests.get(url, auth=self.auth()).json()
+        url = urlparse.urljoin(self.service_url, "author/%s/friends" % str(author_id))
+        response = requests.get(url, auth=self.auth()).json()
+        response.raise_for_status()
+        return verify_friends_of_endpoint_output(url, response.json())
 
     def get_author_posts(self):
         url = urlparse.urljoin(self.service_url, 'author/posts')
@@ -278,5 +280,14 @@ def verify_posts_endpoint_output(url, json):
     else:
         logging.warn(
             "%s did not conform to the expected response format! Returning an empty list of posts!"
+            % url)
+        return {}
+
+def verify_friends_of_endpoint_output(url, json):
+    if all(keys in json for keys in ('query', 'authors')):
+        return json
+    else:
+        logging.warn(
+            "%s did not conform to the expected response format! Returning an empty list instead of friends!"
             % url)
         return {}

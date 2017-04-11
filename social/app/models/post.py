@@ -211,6 +211,21 @@ def get_all_foaf_posts(author):
 
     for friend in friends_list:
         friend_obj = Author.objects.get(pk=friend)
+        # check if anyone we follow is in 2's friends. if so then return their id
+
+        # Remote author
+        if not friend_obj.node.local:
+            # make call to that remote author's friend api
+            friends_json = friend_obj.node.get_author_friends(friend_obj.id)
+            authors_json = friends_json["authors"]
+            for author_id in authors_json:
+                if author_id.startswith('http'):
+                    author_id = Author.get_id_from_uri(author_id)
+                remote_author = Author.objects.filter(Q(author__followed_authors__id=author_id))
+                if remote_author is not None:
+                    foafs.update(author_id)
+
+        # Either way, check local author's friends
         new_foafs = set(ff.id for ff in friend_obj.friends.all())
         foafs.update(new_foafs)
     foafs.update(friends_list)
