@@ -35,11 +35,11 @@ Contributors:
 Team Members
 ============
 
-* Adam Ford (ajford@ualberta.ca)
-* Alanna McLafferty (mclaffer@ualberta.ca)
-* David Yee (dvyee@ualberta.ca
-* Gaylord Mbuyi (gaylord@ualberta.ca)
-* Tiegan Bonowicz (tiegan@ualberta.ca)
+* Adam Ford (ajford at ualberta dot ca)
+* Alanna McLafferty (mclaffer at ualberta dot ca)
+* David Yee (dvyee at ualberta dot ca)
+* Gaylord Mbuyi (gaylord at ualberta dot ca)
+* Tiegan Bonowicz (tiegan at ualberta dot ca)
 
 Video
 =====
